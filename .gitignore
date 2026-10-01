@@ -8,3 +8,7 @@ releases/
 *.zip
 .env
 .env.*
+submissions/
+*.eml
+approval.json
+delivery-state.json

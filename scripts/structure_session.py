@@ -9,8 +9,9 @@ import extract as e
 import cohort as c
 import compare_processes as p
 import grade_and_trace as g
+import behavior_atoms as b
 
-VERSION="0.3.0"
+VERSION="0.4.0"
 DETAIL_FIELDS=["goal","target","constraints","output_requirements","explicit_steps",
     "delegation_scope","control_boundary","verification_request","correction_issue",
     "reuse_resume","question_focus","evaluation_reference"]
@@ -47,7 +48,7 @@ def details(path,participant_id,users,known):
     return value
 
 
-def analyze(run_dirs,detail_path=None):
+def analyze(run_dirs,detail_path=None,atom_path=None):
     people=set()
     for folder in run_dirs:
         patterns=e.read_json(Path(folder)/"patterns.json")
@@ -71,10 +72,14 @@ def analyze(run_dirs,detail_path=None):
                 "sha256":hashlib.sha256(result_path.read_bytes()).hexdigest(),"meaning":"observed_numeric_result_not_correctness_judgment"})
     users=[a for a in actions.values() if a["actor"]=="user"]
     detail_doc=details(detail_path,pid,users,{a["source_ref"] for a in actions.values()})
+    atom_doc=b.validate(atom_path,pid,list(actions.values()))
+    atom_mismatches=b.enrich(atom_doc,structure['processes'],list(actions.values()))
     return {"structure_version":"1.0.0","package_version":VERSION,"participant_id":pid,
         "purpose":"individual_observation_extraction_only","review_status":"draft",
         "observed_actions":list(actions.values()),"instruction_details":detail_doc,
         "detail_status":"source_abstractions_supplied_not_semantically_verified" if detail_path else "not_extracted_fields_unknown",
+        "behavior_atoms":atom_doc,"atom_status":"observations_supplied_not_semantically_verified" if atom_path else "not_extracted_unknown",
+        "fine_coding_mismatches":atom_mismatches,
         "module_dictionary":structure["module_dictionary"],"processes":structure["processes"],
         "task_units":structure["units"],"coverage":coverage,"source_runs":structure["source_runs"],
         "observed_task_results":result_records,"missing_task_result_units":[u["unit_id"] for u in structure["units"] if not any(r["result"]["task_id"]==u["task_id"] for r in result_records)],
@@ -96,7 +101,7 @@ def report(value):
     counts=Counter(a["actor"] for a in value["observed_actions"])
     lines += ["", f"관찰 사건 {len(value['observed_actions'])}개 / 사용자 {counts['user']}개 / AI {counts['assistant']}개 / 도구 {counts['tool']}개. 아래 비율의 분모는 각 과제의 관찰 사용자 사건이며 전체 행동량으로 일반화하지 않습니다."]
     for unit in value["task_units"]:
-        lines.append(f"과제 {unit['task_id']}: 사용자 {unit['user_events']}개, 확정되지 않은 사건 {unit['ambiguous_user_events']}개, 본문 불완전 사건 {unit['truncated_events']}개, 관찰 도구 실패 {unit['observed_tool_failures']}개.")
+        lines.append(f"과제 {unit['task_id']}: 사용자 {unit['user_events']}개, 보류·미분류 사건 {unit['ambiguous_user_events']}개, 본문 불완전 사건 {unit['truncated_events']}개, 관찰 도구 실패 {unit['observed_tool_failures']}개.")
     lines += ["", "| 모듈 | 사용자 근거 | 뒤따른 사건 수 | 순서 근거 |", "|---|---|---:|---|"]
     for process in value["processes"]:
         for module in process["modules"]:
@@ -111,6 +116,13 @@ def report(value):
     lines += ["", "출처·읽기 범위와 확인된 모델 설정:"]
     for source in value["source_runs"]:
         lines.append(f"- {source['run_id']}: 모드 {source['data_mode']}, 완전 추출 표시 {source['complete_extraction']}, 모델 관찰 {e.canonical(source['model_observation'])}.")
+    lines +=['','세부 행동 상태: '+value['atom_status']+'. 같은 발화 안의 순서는 명시 근거가 있는 관계만 보존합니다.',
+        '| 사용자 사건 | 세부 행동 | 명시 순서/병렬 관계 수 |','|---|---|---:|']
+    for row in value['behavior_atoms']['entries']:
+        labels=' / '.join((atom['category'] or '미분류')+':'+atom['subtype'] for atom in row['atoms'] or [])
+        lines.append(f"| {row['event_id']} | {labels if row['atoms'] is not None else '미확인'} | {len(row['relations'] or [])} |")
+    lines +=['',f"상세 행동과 기존 코딩 불일치 {len(value['fine_coding_mismatches'])}건. 원래 코딩은 덮어쓰지 않고 검토 대상으로 유지합니다.",
+        'AI 진술과 도구 보고의 내용은 별도 근거로 추출하며 사용자 요청 충족이나 정답을 판정하지 않습니다.']
     lines +=["", "지시 상세 항목은 목표·대상·조건·출력 요구·명시 단계·위임 범위·통제 경계·검증 요청·교정 대상·재사용·질문 초점·평가 기준 참조입니다.",
         "null은 확인 못함, []는 읽은 범위에서 해당 항목이 관찰되지 않음입니다. 둘을 행동 없음으로 합치지 않습니다.",
         "AI/도구 사건과 사용자 지시는 별개이며 같은 발화의 복수 패턴에 순서를 만들지 않습니다. 세션 사이를 이어 붙이지 않습니다.",
@@ -119,15 +131,17 @@ def report(value):
     return "\n".join(lines)
 
 
-def build(run_dirs,out_root,detail_path=None):
+def build(run_dirs,out_root,detail_path=None,atom_path=None):
     folder=e.new_run(out_root)
     try:
-        value=analyze(run_dirs,detail_path)
+        value=analyze(run_dirs,detail_path,atom_path)
         e.write_json(folder/"session-structure.json",value)
         e.write_json(folder/"instruction-details.json",value["instruction_details"])
+        e.write_json(folder/'behavior-atoms.json',value['behavior_atoms'])
+        p.write_csv(folder/'behavior-atoms.csv',b.csv_rows(value['behavior_atoms']))
         p.write_csv(folder/"modules.csv",[{"process_id":proc["process_id"],"task_id":proc["task_id"],"session_id":proc["session_id"],**m} for proc in value["processes"] for m in proc["modules"]])
         (folder/"report.md").write_text(report(value),encoding="utf-8")
-        names=["session-structure.json","instruction-details.json","modules.csv","report.md"]
+        names=["session-structure.json","instruction-details.json","behavior-atoms.json","behavior-atoms.csv","modules.csv","report.md"]
         e.write_json(folder/"integrity.json",{"files":{name:hashlib.sha256((folder/name).read_bytes()).hexdigest() for name in names}})
     except (e.ContractError,OSError) as error:
         e.write_json(folder/"failure.json",{"status":"failed","error_code":str(error) if isinstance(error,e.ContractError) else "filesystem_error"})
@@ -139,10 +153,11 @@ if __name__=="__main__":
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runs",nargs="+",required=True)
     parser.add_argument("--details")
+    parser.add_argument('--atoms')
     parser.add_argument("--out-root",default=str(e.ROOT/"runs"))
     args=parser.parse_args()
     try:
-        print(build(args.runs,args.out_root,args.details))
+        print(build(args.runs,args.out_root,args.details,args.atoms))
     except (e.ContractError,OSError):
         print("FAILED: inspect new run failure.json",file=sys.stderr)
         raise SystemExit(1)

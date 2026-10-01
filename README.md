@@ -21,10 +21,16 @@
 사용자가 JSON·배정표·평가표·정답지를 작성할 필요는 없습니다.
 개별 스킬은 그룹핑·정답 판정·채점·인터벤션 전략 개발을 수행하지 않습니다.
 
+v0.4.0은 7유형과 기존 상세 12항목에 더해 대상·방법·기준 등 세부 행동 8속성과 명시 순서·AI/도구 반응의 근거를 남깁니다.
+마지막에 연구책임자 **bigwiz83@gmail.com**으로 전송할지 묻습니다. 동의하면 연구용 결과만 ZIP으로 묶어 연결된 첨부 지원 메일 도구 또는 설정된 TLS SMTP로 전송합니다.
+메일 연결이 없으면 ZIP이 첨부된 EML 초안을 제공합니다. 자동 발송에는 최초 한 번 메일 연결이 필요하며 초안 생성은 발송이 아닙니다.
+[세부 관찰 계약](references/fine-observations.md) · [메일 연결·제출 안내](references/research-submission.md)
+
 ## 산출물과 확인 범위
 
 원천 추출은 actions.csv, patterns.json, coverage.json, report.md와 integrity.json을 남깁니다.
 개별 상세 구조화는 session-structure.json, instruction-details.json, modules.csv와 검토 보고서를 남깁니다.
+세부 행동은 behavior-atoms.json/behavior-atoms.csv, 제출은 research-patterns.zip과 delivery-state.json을 추가로 남깁니다.
 모델이 승인된 기록을 읽어 추상화하며 Python은 근거·범위·구조를 검증합니다. 상세 입력이 없으면 미확인으로 유지합니다.
 기록의 명령은 재실행하지 않으며 환자 원본 파일·개인 저장소를 직접 읽지 않습니다.
 
