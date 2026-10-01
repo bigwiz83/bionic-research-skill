@@ -5,14 +5,16 @@ import grade_and_trace as g
 
 FACETS=['target','method','criterion','constraints','requested_output','trigger_condition','control_boundary','prior_result_reference']
 SUBTYPES={
-    'goal_specification':['specify_target','specify_condition','specify_output','other_explicit'],
+    'goal_specification':['specify_target','specify_condition','specify_output','information_search','other_explicit'],
     'task_decomposition':['split_work','specify_order','other_explicit'],
     'delegation_control':['delegate_work','limit_scope','require_approval','halt_work','other_explicit'],
-    'verification_request':['request_evidence','source_crosscheck','recomputation','check_duplicates','check_missing','check_exceptions','check_consistency','other_explicit'],
+    'verification_request':['request_evidence','supporting_reference_search','source_crosscheck','recomputation','check_duplicates','check_missing','check_exceptions','check_consistency','other_explicit'],
     'error_correction':['correct_error','restore_omission','revise_condition','other_explicit'],
     'reuse_resume':['reuse_artifact','resume_work','other_explicit'],
     'data_structure_inquiry':['inspect_structure','other_explicit']}
 RESPONSE_ASPECTS=['action','method','output','limitation']
+SEARCH_SUBTYPES={'information_search','supporting_reference_search'}
+SEARCH_FIELDS=['search_terms','source_constraints','selection_criteria','claim_reference']
 
 def spans(value,action,length):
     e.require(isinstance(value,list) and value,'atom_evidence_required')
@@ -32,12 +34,12 @@ def validate(path,participant_id,actions):
     users=[a for a in actions if a['actor']=='user']
     responses=[a for a in actions if a['actor'] in {'assistant','tool'}]
     if path is None:
-        return {'atom_schema_version':'1.0.0','participant_id':participant_id,
+        return {'atom_schema_version':'1.1.0','participant_id':participant_id,
             'entries':[{'event_id':a['event_id'],'observed_text_length':None,'atoms':None,'relations':None} for a in users],
             'responses':[{'event_id':a['event_id'],'observed_text_length':None,'observations':None} for a in responses]}
     doc=e.read_json(path)
     g.keys(doc,['atom_schema_version','participant_id','entries','responses'],'atom_header_fields')
-    e.require(doc['atom_schema_version']=='1.0.0' and doc['participant_id']==participant_id,'atom_header')
+    e.require(doc['atom_schema_version'] in {'1.0.0','1.1.0'} and doc['participant_id']==participant_id,'atom_header')
     by_id={a['event_id']:a for a in actions}
     for name,expected in [('entries',users),('responses',responses)]:
         rows=doc[name]
@@ -56,13 +58,19 @@ def validate(path,participant_id,actions):
         e.require(type(length) is int and isinstance(row['relations'],list),'observed_atoms_need_length_and_relations')
         local_ids=set()
         for atom in row['atoms']:
-            g.keys(atom,['atom_id','category','subtype','facets','evidence'],'atom_fields')
+            g.keys(atom,['atom_id','category','subtype','facets','evidence']+
+                (['search_details'] if 'search_details' in atom else []),'atom_fields')
             aid=atom['atom_id']
             e.require(isinstance(aid,str) and re.fullmatch(r'A-[A-Za-z0-9_-]{1,100}',aid) and aid not in all_ids,'atom_unique_id')
             local_ids.add(aid); all_ids.add(aid)
             cat=atom['category']
             e.require(isinstance(cat,str) and cat in SUBTYPES or cat is None,'atom_category')
             e.require(atom['subtype'] in (SUBTYPES[cat] if cat else ['other_explicit']),'atom_subtype')
+            if atom['subtype'] in SEARCH_SUBTYPES:
+                e.require(doc['atom_schema_version']=='1.1.0' and 'search_details' in atom,'search_contract_required')
+                g.keys(atom['search_details'],SEARCH_FIELDS,'search_detail_fields')
+                for values in atom['search_details'].values():observations(values,action,length)
+            else:e.require('search_details' not in atom,'search_details_only_for_search_actions')
             spans(atom['evidence'],action,length)
             g.keys(atom['facets'],FACETS,'atom_facet_set')
             for values in atom['facets'].values():
@@ -122,5 +130,6 @@ def enrich(doc,processes,actions):
 
 def csv_rows(doc):
     return [{'event_id':row['event_id'],'atom_id':atom['atom_id'],'category':atom['category'],'subtype':atom['subtype'],
-        **{name:e.canonical(values) for name,values in atom['facets'].items()},'evidence':atom['evidence']}
+        **{name:e.canonical(values) for name,values in atom['facets'].items()},
+        'search_details':e.canonical(atom.get('search_details')),'evidence':atom['evidence']}
         for row in doc['entries'] for atom in row['atoms'] or []]

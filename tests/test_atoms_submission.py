@@ -117,6 +117,73 @@ class AtomTests(unittest.TestCase):
         doc,_=self.doc();doc['entries'][0]['event_id']=doc['responses'][0]['event_id']
         with self.assertRaisesRegex(e.ContractError,'exact_event_scope'):self.use(doc)
 
+    def search_atom(self,row,aid,category,subtype):
+        evidence=copy.deepcopy(row['atoms'][0]['evidence'])
+        return {'atom_id':aid,'category':category,'subtype':subtype,
+            'facets':{name:None for name in b.FACETS},'evidence':evidence,
+            'search_details':{'search_terms':[{'value':'합성 주제의 명시 검색어','evidence':copy.deepcopy(evidence)}],
+                'source_constraints':[],'selection_criteria':None,'claim_reference':None}}
+
+    def test_search_purposes_separate_keep_source_coding_and_unknowns(self):
+        doc,original=self.doc();row=doc['entries'][0]
+        row['atoms']=[self.search_atom(row,'A-SEARCH-INFO','goal_specification','information_search'),
+            self.search_atom(row,'A-SEARCH-SUPPORT','verification_request','supporting_reference_search')]
+        value=self.use(doc)
+        self.assertEqual([a['subtype'] for a in value['behavior_atoms']['entries'][0]['atoms']],
+            ['information_search','supporting_reference_search'])
+        self.assertEqual(value['observed_actions'],original['observed_actions'])
+        self.assertEqual(value['fine_coding_mismatches'][0]['fine_categories_missing_from_source_coding'],['verification_request'])
+        self.assertEqual(len(value['processes'][0]['modules']),5)
+        self.assertEqual(value['processes'][0]['modules'][0]['explicit_within_utterance_relations'],[])
+        self.assertIsNone(row['atoms'][0]['search_details']['selection_criteria'])
+        self.assertEqual(row['atoms'][0]['search_details']['source_constraints'],[])
+        self.assertFalse(value['grading_performed'])
+
+    def test_search_fields_and_own_spans_required(self):
+        doc,_=self.doc();row=doc['entries'][0]
+        row['atoms']=[self.search_atom(row,'A-SEARCH','goal_specification','information_search')]
+        self.use(doc)
+        del row['atoms'][0]['search_details']['selection_criteria']
+        with self.assertRaisesRegex(e.ContractError,'search_detail_fields'):self.use(doc)
+        row['atoms'][0]['search_details']['selection_criteria']=None
+        row['atoms'][0]['search_details']['search_terms'][0]['evidence'][0]['ref']='OTHER/row-000001'
+        with self.assertRaisesRegex(e.ContractError,'own_span'):self.use(doc)
+
+    def test_search_new_contract_and_category_boundary_legacy_accepted(self):
+        doc,_=self.doc();doc['atom_schema_version']='1.0.0'
+        self.assertEqual(self.use(doc)['behavior_atoms']['atom_schema_version'],'1.0.0')
+        row=doc['entries'][0]
+        row['atoms']=[self.search_atom(row,'A-SEARCH','goal_specification','information_search')]
+        with self.assertRaisesRegex(e.ContractError,'search_contract_required'):self.use(doc)
+        doc['atom_schema_version']='1.1.0';self.use(doc)
+        row['atoms'][0]['category']='verification_request'
+        with self.assertRaisesRegex(e.ContractError,'atom_subtype'):self.use(doc)
+
+    def test_search_details_missing_or_on_nonsearch_type_rejected(self):
+        doc,_=self.doc();row=doc['entries'][0]
+        row['atoms']=[self.search_atom(row,'A-SEARCH','goal_specification','information_search')]
+        del row['atoms'][0]['search_details']
+        with self.assertRaisesRegex(e.ContractError,'search_contract_required'):self.use(doc)
+        row['atoms'][0]['subtype']='specify_target';row['atoms'][0]['search_details']={name:None for name in b.SEARCH_FIELDS}
+        with self.assertRaisesRegex(e.ContractError,'only_for_search_actions'):self.use(doc)
+
+    def test_search_observations_preserved_in_structure_csv_and_submission_zip(self):
+        doc,_=self.doc();row=doc['entries'][0]
+        row['atoms']=[self.search_atom(row,'A-SEARCH-EXPORT','goal_specification','information_search')]
+        e.write_json(self.path,doc)
+        structured=s.build([self.runs[0]],self.root/'search-structure',atom_path=self.path)
+        with patch.object(m.smtplib,'SMTP',side_effect=AssertionError('must not connect')):
+            folder=m.prepare([self.runs[0]],structured,self.root/'search-bundles')
+        with zipfile.ZipFile(folder/'research-patterns.zip') as z:
+            exported=json.loads(z.read('individual/behavior-atoms.json'))
+            self.assertEqual(exported['entries'][0]['atoms'][0]['search_details'],row['atoms'][0]['search_details'])
+            import csv,io
+            rows=list(csv.DictReader(io.StringIO(z.read('individual/behavior-atoms.csv').decode('utf-8-sig'))))
+            self.assertEqual(json.loads(rows[0]['search_details']),row['atoms'][0]['search_details'])
+            self.assertEqual(rows[0]['subtype'],'information_search')
+            self.assertIn('information_search',z.read('individual/report.md').decode('utf-8'))
+        self.assertEqual(e.read_json(folder/'delivery-state.json')['status'],'prepared_not_sent')
+
 class FakeSMTP:
     sent=[]
     def __init__(self,*args,**kwargs):self.tls=False

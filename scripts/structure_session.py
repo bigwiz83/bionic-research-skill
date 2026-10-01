@@ -11,7 +11,7 @@ import compare_processes as p
 import grade_and_trace as g
 import behavior_atoms as b
 
-VERSION="0.4.0"
+VERSION="0.4.1"
 DETAIL_FIELDS=["goal","target","constraints","output_requirements","explicit_steps",
     "delegation_scope","control_boundary","verification_request","correction_issue",
     "reuse_resume","question_focus","evaluation_reference"]

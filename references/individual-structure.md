@@ -1,4 +1,4 @@
-# 개별 참여자 관찰 추출·구조화 계약 v1.0.0 — 스킬 v0.4.0
+# 개별 참여자 관찰 추출·구조화 계약 v1.0.0 — 스킬 v0.4.1
 
 스킬은 참여자 한 명이 지정한 과제 세션들에서 정보를 최대한 관찰해 구조화한다. 참여자 간 그룹핑, 정답지 채점, 성과 요인 역추적, 인터벤션 전략 개발은 이 스킬의 실행 범위가 아니다. 개별 출력은 그 후속 연구가 가능한 근거 자료다. 배정표·점수표·정답지를 참여자에게 요구하지 않는다.
 
@@ -72,7 +72,7 @@ explicit_steps 배열은 원문에 명시된 순서만 보존한다. 실행 사�
 - modules.csv: 같은 정보를 모듈 단위로 펼친 후속 분석용 표.
 - report.md, integrity.json: 개별 범위·미확인 정보·검토 항목과 해시.
 
-기존 actions.csv/patterns.json/coverage.json/report.md/integrity.json은 보존한다. 새 실행 폴더에 추가 구조화 산출물을 만들며 기존 실행을 덮어쓰지 않는다. extraction 모듈 출력의 skill_version은 0.1.0이며 개별 구조화/패키지 버전은 0.4.0이다. SKILL 지시 해시는 별도로 보존한다.
+기존 actions.csv/patterns.json/coverage.json/report.md/integrity.json은 보존한다. 새 실행 폴더에 추가 구조화 산출물을 만들며 기존 실행을 덮어쓰지 않는다. extraction 모듈 출력의 skill_version은 0.1.0이며 개별 구조화/패키지 버전은 0.4.1이다. SKILL 지시 해시는 별도로 보존한다.
 
 ## 최종 결과 관찰 — 정답 판정 없이 보존
 
