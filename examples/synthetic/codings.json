@@ -1,0 +1,236 @@
+{
+  "taxonomy_version": "instruction-patterns-0.1.0",
+  "entries": [
+    {
+      "source_ref": "S-A/row-000001",
+      "decision": "coded",
+      "categories": [
+        "delegation_control"
+      ],
+      "criterion_codes": [
+        "explicit_delegation_or_boundary"
+      ],
+      "ambiguity": null,
+      "evidence": [
+        {
+          "ref": "S-A/row-000001",
+          "start": 0,
+          "end": 21
+        }
+      ],
+      "related_refs": []
+    },
+    {
+      "source_ref": "S-A/row-000004",
+      "decision": "coded",
+      "categories": [
+        "goal_specification"
+      ],
+      "criterion_codes": [
+        "explicit_goal_or_constraint"
+      ],
+      "ambiguity": null,
+      "evidence": [
+        {
+          "ref": "S-A/row-000004",
+          "start": 0,
+          "end": 30
+        }
+      ],
+      "related_refs": []
+    },
+    {
+      "source_ref": "S-A/row-000005",
+      "decision": "coded",
+      "categories": [
+        "data_structure_inquiry"
+      ],
+      "criterion_codes": [
+        "explicit_structure_request"
+      ],
+      "ambiguity": null,
+      "evidence": [
+        {
+          "ref": "S-A/row-000005",
+          "start": 0,
+          "end": 19
+        }
+      ],
+      "related_refs": []
+    },
+    {
+      "source_ref": "S-A/row-000006",
+      "decision": "coded",
+      "categories": [
+        "task_decomposition"
+      ],
+      "criterion_codes": [
+        "explicit_parts_or_order"
+      ],
+      "ambiguity": null,
+      "evidence": [
+        {
+          "ref": "S-A/row-000006",
+          "start": 0,
+          "end": 30
+        }
+      ],
+      "related_refs": []
+    },
+    {
+      "source_ref": "S-A/row-000007",
+      "decision": "coded",
+      "categories": [
+        "verification_request"
+      ],
+      "criterion_codes": [
+        "explicit_evidence_or_check_request"
+      ],
+      "ambiguity": null,
+      "evidence": [
+        {
+          "ref": "S-A/row-000007",
+          "start": 0,
+          "end": 25
+        }
+      ],
+      "related_refs": [
+        "S-A/row-000008",
+        "S-A/row-000009"
+      ]
+    },
+    {
+      "source_ref": "S-A/row-000010",
+      "decision": "coded",
+      "categories": [
+        "error_correction"
+      ],
+      "criterion_codes": [
+        "explicit_error_or_revision"
+      ],
+      "ambiguity": null,
+      "evidence": [
+        {
+          "ref": "S-A/row-000010",
+          "start": 0,
+          "end": 21
+        }
+      ],
+      "related_refs": [
+        "S-A/row-000009"
+      ]
+    },
+    {
+      "source_ref": "S-A/row-000011",
+      "decision": "coded",
+      "categories": [
+        "delegation_control"
+      ],
+      "criterion_codes": [
+        "explicit_delegation_or_boundary"
+      ],
+      "ambiguity": null,
+      "evidence": [
+        {
+          "ref": "S-A/row-000011",
+          "start": 0,
+          "end": 13
+        }
+      ],
+      "related_refs": [
+        "S-A/row-000012"
+      ]
+    },
+    {
+      "source_ref": "S-A/row-000013",
+      "decision": "coded",
+      "categories": [
+        "verification_request"
+      ],
+      "criterion_codes": [
+        "explicit_evidence_or_check_request"
+      ],
+      "ambiguity": null,
+      "evidence": [
+        {
+          "ref": "S-A/row-000013",
+          "start": 0,
+          "end": 25
+        }
+      ],
+      "related_refs": []
+    },
+    {
+      "source_ref": "S-B/row-000001",
+      "decision": "coded",
+      "categories": [
+        "reuse_resume"
+      ],
+      "criterion_codes": [
+        "explicit_prior_result_or_resume"
+      ],
+      "ambiguity": null,
+      "evidence": [
+        {
+          "ref": "S-B/row-000001",
+          "start": 0,
+          "end": 32
+        }
+      ],
+      "related_refs": [
+        "S-A/row-000012"
+      ]
+    },
+    {
+      "source_ref": "S-B/row-000003",
+      "decision": "deferred",
+      "categories": [],
+      "criterion_codes": [],
+      "ambiguity": "ambiguous_intent",
+      "evidence": [
+        {
+          "ref": "S-B/row-000003",
+          "start": 0,
+          "end": 10
+        }
+      ],
+      "related_refs": [
+        "S-B/row-000002"
+      ]
+    },
+    {
+      "source_ref": "S-C/row-000001",
+      "decision": "deferred",
+      "categories": [],
+      "criterion_codes": [],
+      "ambiguity": "insufficient_context",
+      "evidence": [
+        {
+          "ref": "S-C/row-000001",
+          "start": 0,
+          "end": 10
+        }
+      ],
+      "related_refs": []
+    },
+    {
+      "source_ref": "S-C/row-000005",
+      "decision": "coded",
+      "categories": [
+        "verification_request"
+      ],
+      "criterion_codes": [
+        "explicit_evidence_or_check_request"
+      ],
+      "ambiguity": null,
+      "evidence": [
+        {
+          "ref": "S-C/row-000005",
+          "start": 0,
+          "end": 24
+        }
+      ],
+      "related_refs": []
+    }
+  ]
+}

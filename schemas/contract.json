@@ -1,0 +1,1037 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:bionic-research-skill:1.0.0",
+  "title": "Bionic research synthetic intake and output contract",
+  "$defs": {
+    "span": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "pattern": "S-[A-Z0-9-]{1,48}/row-[0-9]{6,}"
+        },
+        "start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "ref",
+        "start",
+        "end"
+      ],
+      "additionalProperties": false
+    },
+    "model": {
+      "type": "object",
+      "properties": {
+        "model_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "[A-Za-z0-9_./:-]{1,128}"
+        },
+        "model_id_confirmed": {
+          "type": "boolean"
+        },
+        "settings_confirmed": {
+          "type": "boolean"
+        },
+        "temperature": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "top_p": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "context_length": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        }
+      },
+      "required": [
+        "model_id",
+        "model_id_confirmed",
+        "settings_confirmed",
+        "temperature",
+        "top_p",
+        "context_length"
+      ],
+      "additionalProperties": false
+    },
+    "session": {
+      "type": "object",
+      "properties": {
+        "session_id": {
+          "type": "string",
+          "pattern": "S-[A-Z0-9-]{1,48}"
+        },
+        "purpose": {
+          "enum": [
+            "task",
+            "analysis"
+          ]
+        },
+        "approved": {
+          "type": "boolean"
+        },
+        "attempt_status": {
+          "enum": [
+            "completed",
+            "failed",
+            "cancelled",
+            "interrupted",
+            "resumed",
+            "unknown"
+          ]
+        },
+        "access": {
+          "enum": [
+            "available",
+            "missing_access",
+            "unreadable",
+            "missing_record"
+          ]
+        },
+        "events_file": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "total_events": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "end_verified": {
+          "type": "boolean"
+        },
+        "analysis_start_index": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "read_receipts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 0,
+          "uniqueItems": false
+        }
+      },
+      "required": [
+        "session_id",
+        "purpose",
+        "approved",
+        "attempt_status",
+        "access",
+        "events_file",
+        "total_events",
+        "end_verified",
+        "analysis_start_index",
+        "read_receipts"
+      ],
+      "additionalProperties": false
+    },
+    "manifest": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "data_mode": {
+          "const": "synthetic"
+        },
+        "dataset_namespace": {
+          "type": "string",
+          "pattern": "SYN-[A-Z0-9-]{1,64}"
+        },
+        "participant_id": {
+          "type": "string",
+          "pattern": "P-[A-Z0-9-]{1,48}"
+        },
+        "task_id": {
+          "type": "string",
+          "pattern": "T-[A-Z0-9-]{1,48}"
+        },
+        "adapter": {
+          "enum": [
+            "synthetic-export-v1",
+            "bionic-introspection-normalized-unverified"
+          ]
+        },
+        "model_observation": {
+          "$ref": "#/$defs/model"
+        },
+        "sessions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/session"
+          },
+          "minItems": 1,
+          "uniqueItems": false
+        }
+      },
+      "required": [
+        "schema_version",
+        "data_mode",
+        "dataset_namespace",
+        "participant_id",
+        "task_id",
+        "adapter",
+        "model_observation",
+        "sessions"
+      ],
+      "additionalProperties": false
+    },
+    "event": {
+      "type": "object",
+      "properties": {
+        "source_index": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "source_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_sequence": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "timestamp": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "actor": {
+          "enum": [
+            "user",
+            "assistant",
+            "tool",
+            "system"
+          ]
+        },
+        "kind": {
+          "enum": [
+            "user_message",
+            "assistant_statement",
+            "tool_request",
+            "tool_success",
+            "tool_failure",
+            "tool_cancelled",
+            "system_event",
+            "compaction",
+            "private"
+          ]
+        },
+        "visibility": {
+          "enum": [
+            "public",
+            "private"
+          ]
+        },
+        "phase": {
+          "enum": [
+            "task",
+            "analysis"
+          ]
+        },
+        "content_complete": {
+          "type": "boolean"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_index",
+        "source_id",
+        "source_sequence",
+        "timestamp",
+        "actor",
+        "kind",
+        "visibility",
+        "phase",
+        "content_complete",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/event"
+      },
+      "minItems": 0,
+      "uniqueItems": false
+    },
+    "coding": {
+      "type": "object",
+      "properties": {
+        "source_ref": {
+          "type": "string",
+          "pattern": "S-[A-Z0-9-]{1,48}/row-[0-9]{6,}"
+        },
+        "decision": {
+          "enum": [
+            "coded",
+            "deferred",
+            "unclassified"
+          ]
+        },
+        "categories": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "goal_specification",
+              "task_decomposition",
+              "delegation_control",
+              "verification_request",
+              "error_correction",
+              "reuse_resume",
+              "data_structure_inquiry"
+            ]
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "criterion_codes": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "explicit_goal_or_constraint",
+              "explicit_parts_or_order",
+              "explicit_delegation_or_boundary",
+              "explicit_evidence_or_check_request",
+              "explicit_error_or_revision",
+              "explicit_prior_result_or_resume",
+              "explicit_structure_request"
+            ]
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "ambiguity": {
+          "enum": [
+            null,
+            "ambiguous_intent",
+            "insufficient_context"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/span"
+          },
+          "minItems": 1,
+          "uniqueItems": false
+        },
+        "related_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "S-[A-Z0-9-]{1,48}/row-[0-9]{6,}"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "source_ref",
+        "decision",
+        "categories",
+        "criterion_codes",
+        "ambiguity",
+        "evidence",
+        "related_refs"
+      ],
+      "additionalProperties": false
+    },
+    "codings": {
+      "type": "object",
+      "properties": {
+        "taxonomy_version": {
+          "const": "instruction-patterns-0.1.0"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/coding"
+          },
+          "minItems": 0,
+          "uniqueItems": false
+        }
+      },
+      "required": [
+        "taxonomy_version",
+        "entries"
+      ],
+      "additionalProperties": false
+    },
+    "action": {
+      "type": "object",
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "pattern": "E-[0-9a-f]{64}"
+        },
+        "participant_id": {
+          "type": "string",
+          "pattern": "P-[A-Z0-9-]{1,48}"
+        },
+        "task_id": {
+          "type": "string",
+          "pattern": "T-[A-Z0-9-]{1,48}"
+        },
+        "session_id": {
+          "type": "string",
+          "pattern": "S-[A-Z0-9-]{1,48}"
+        },
+        "source_index": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "source_sequence": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "actor": {
+          "enum": [
+            "user",
+            "assistant",
+            "tool",
+            "system"
+          ]
+        },
+        "observation": {
+          "type": "string"
+        },
+        "categories": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "goal_specification",
+              "task_decomposition",
+              "delegation_control",
+              "verification_request",
+              "error_correction",
+              "reuse_resume",
+              "data_structure_inquiry"
+            ]
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "decision": {
+          "enum": [
+            "coded",
+            "deferred",
+            "unclassified",
+            "not_user"
+          ]
+        },
+        "ambiguity": {
+          "enum": [
+            null,
+            "ambiguous_intent",
+            "insufficient_context"
+          ]
+        },
+        "criterion_codes": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "explicit_goal_or_constraint",
+              "explicit_parts_or_order",
+              "explicit_delegation_or_boundary",
+              "explicit_evidence_or_check_request",
+              "explicit_error_or_revision",
+              "explicit_prior_result_or_resume",
+              "explicit_structure_request"
+            ]
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "source_ref": {
+          "type": "string",
+          "pattern": "S-[A-Z0-9-]{1,48}/row-[0-9]{6,}"
+        },
+        "ref_kind": {
+          "const": "package_row"
+        },
+        "timestamp": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "content_complete": {
+          "type": "boolean"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/span"
+          },
+          "minItems": 0,
+          "uniqueItems": false
+        },
+        "related_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "S-[A-Z0-9-]{1,48}/row-[0-9]{6,}"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "event_id",
+        "participant_id",
+        "task_id",
+        "session_id",
+        "source_index",
+        "source_sequence",
+        "actor",
+        "observation",
+        "categories",
+        "decision",
+        "ambiguity",
+        "criterion_codes",
+        "source_ref",
+        "ref_kind",
+        "timestamp",
+        "content_complete",
+        "evidence",
+        "related_refs"
+      ],
+      "additionalProperties": false
+    },
+    "count": {
+      "type": "object",
+      "properties": {
+        "category": {
+          "enum": [
+            "goal_specification",
+            "task_decomposition",
+            "delegation_control",
+            "verification_request",
+            "error_correction",
+            "reuse_resume",
+            "data_structure_inquiry"
+          ]
+        },
+        "label": {
+          "type": "string"
+        },
+        "criterion": {
+          "enum": [
+            "explicit_goal_or_constraint",
+            "explicit_parts_or_order",
+            "explicit_delegation_or_boundary",
+            "explicit_evidence_or_check_request",
+            "explicit_error_or_revision",
+            "explicit_prior_result_or_resume",
+            "explicit_structure_request"
+          ]
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "denominator": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "proportion": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "event_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "E-[0-9a-f]{64}"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "category",
+        "label",
+        "criterion",
+        "count",
+        "denominator",
+        "proportion",
+        "event_ids"
+      ],
+      "additionalProperties": false
+    },
+    "patterns": {
+      "type": "object",
+      "properties": {
+        "skill_version": {
+          "const": "0.1.0"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "taxonomy_version": {
+          "const": "instruction-patterns-0.1.0"
+        },
+        "review_status": {
+          "const": "draft"
+        },
+        "denominator_definition": {
+          "const": "included_unique_public_user_events"
+        },
+        "denominator": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "counts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/count"
+          },
+          "minItems": 7,
+          "uniqueItems": false
+        },
+        "uncertainties": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "event_id": {
+                "type": "string",
+                "pattern": "E-[0-9a-f]{64}"
+              },
+              "source_ref": {
+                "type": "string",
+                "pattern": "S-[A-Z0-9-]{1,48}/row-[0-9]{6,}"
+              },
+              "reason": {
+                "enum": [
+                  "ambiguous_intent",
+                  "insufficient_context"
+                ]
+              }
+            },
+            "required": [
+              "event_id",
+              "source_ref",
+              "reason"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0,
+          "uniqueItems": false
+        },
+        "unclassified_event_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "E-[0-9a-f]{64}"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/action"
+          },
+          "minItems": 0,
+          "uniqueItems": false
+        }
+      },
+      "required": [
+        "skill_version",
+        "schema_version",
+        "taxonomy_version",
+        "review_status",
+        "denominator_definition",
+        "denominator",
+        "counts",
+        "uncertainties",
+        "unclassified_event_ids",
+        "actions"
+      ],
+      "additionalProperties": false
+    },
+    "coverage_session": {
+      "type": "object",
+      "properties": {
+        "session_id": {
+          "type": "string",
+          "pattern": "S-[A-Z0-9-]{1,48}"
+        },
+        "attempt_status": {
+          "enum": [
+            "completed",
+            "failed",
+            "cancelled",
+            "interrupted",
+            "resumed",
+            "unknown"
+          ]
+        },
+        "approval": {
+          "type": "boolean"
+        },
+        "purpose": {
+          "enum": [
+            "task",
+            "analysis"
+          ]
+        },
+        "status": {
+          "enum": [
+            "complete_public_scope",
+            "partial",
+            "excluded_analysis_session",
+            "missing_approval",
+            "missing_access",
+            "unreadable",
+            "missing_record"
+          ]
+        },
+        "total_events": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "read_ranges": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "minItems": 2,
+            "uniqueItems": false
+          },
+          "minItems": 0,
+          "uniqueItems": false
+        },
+        "read_rows": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "included_events": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "missing_ranges": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "minItems": 2,
+            "uniqueItems": false
+          },
+          "minItems": 0,
+          "uniqueItems": false
+        },
+        "excluded": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "ref": {
+                "type": "string",
+                "pattern": "S-[A-Z0-9-]{1,48}/row-[0-9]{6,}"
+              },
+              "reason": {
+                "enum": [
+                  "private_content",
+                  "compaction_summary",
+                  "after_extraction_start"
+                ]
+              }
+            },
+            "required": [
+              "ref",
+              "reason"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0,
+          "uniqueItems": false
+        },
+        "duplicates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "ref": {
+                "type": "string",
+                "pattern": "S-[A-Z0-9-]{1,48}/row-[0-9]{6,}"
+              },
+              "canonical_ref": {
+                "type": "string",
+                "pattern": "S-[A-Z0-9-]{1,48}/row-[0-9]{6,}"
+              }
+            },
+            "required": [
+              "ref",
+              "canonical_ref"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0,
+          "uniqueItems": false
+        },
+        "truncated_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "S-[A-Z0-9-]{1,48}/row-[0-9]{6,}"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "unknown_timestamps": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end_verified": {
+          "type": "boolean"
+        },
+        "receipt_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "[0-9a-f]{64}"
+        },
+        "error_code": {
+          "enum": [
+            null,
+            "json_unreadable_or_invalid"
+          ]
+        }
+      },
+      "required": [
+        "session_id",
+        "attempt_status",
+        "approval",
+        "purpose",
+        "status",
+        "total_events",
+        "read_ranges",
+        "read_rows",
+        "included_events",
+        "missing_ranges",
+        "excluded",
+        "duplicates",
+        "truncated_refs",
+        "unknown_timestamps",
+        "end_verified",
+        "receipt_sha256",
+        "error_code"
+      ],
+      "additionalProperties": false
+    },
+    "coverage": {
+      "type": "object",
+      "properties": {
+        "skill_version": {
+          "const": "0.1.0"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "taxonomy_version": {
+          "const": "instruction-patterns-0.1.0"
+        },
+        "data_mode": {
+          "const": "synthetic"
+        },
+        "dataset_namespace": {
+          "type": "string",
+          "pattern": "SYN-[A-Z0-9-]{1,64}"
+        },
+        "adapter": {
+          "enum": [
+            "synthetic-export-v1",
+            "bionic-introspection-normalized-unverified"
+          ]
+        },
+        "complete_extraction": {
+          "type": "boolean"
+        },
+        "requested_sessions": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "requested_task_sessions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "read_sessions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "included_events": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "included_user_events": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sessions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/coverage_session"
+          },
+          "minItems": 1,
+          "uniqueItems": false
+        },
+        "source_hashes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "session_id": {
+                "type": "string",
+                "pattern": "S-[A-Z0-9-]{1,48}"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "[0-9a-f]{64}"
+              }
+            },
+            "required": [
+              "session_id",
+              "sha256"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0,
+          "uniqueItems": false
+        },
+        "manifest_sha256": {
+          "type": "string",
+          "pattern": "[0-9a-f]{64}"
+        },
+        "codings_sha256": {
+          "type": "string",
+          "pattern": "[0-9a-f]{64}"
+        },
+        "model_observation": {
+          "$ref": "#/$defs/model"
+        },
+        "implementation_sha256": {
+          "type": "string",
+          "pattern": "[0-9a-f]{64}"
+        },
+        "contract_sha256": {
+          "type": "string",
+          "pattern": "[0-9a-f]{64}"
+        },
+        "skill_sha256": {
+          "type": "string",
+          "pattern": "[0-9a-f]{64}"
+        },
+        "taxonomy_sha256": {
+          "type": "string",
+          "pattern": "[0-9a-f]{64}"
+        },
+        "sensitive_review": {
+          "const": "pending_human_review"
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 0,
+          "uniqueItems": false
+        },
+        "run_id": {
+          "type": "string",
+          "pattern": "run-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{32}"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "skill_version",
+        "schema_version",
+        "taxonomy_version",
+        "data_mode",
+        "dataset_namespace",
+        "adapter",
+        "complete_extraction",
+        "requested_sessions",
+        "requested_task_sessions",
+        "read_sessions",
+        "included_events",
+        "included_user_events",
+        "sessions",
+        "source_hashes",
+        "manifest_sha256",
+        "codings_sha256",
+        "model_observation",
+        "implementation_sha256",
+        "contract_sha256",
+        "skill_sha256",
+        "taxonomy_sha256",
+        "sensitive_review",
+        "errors"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.validation-deps/
+runs/
+validation/
+reviews/
+releases/
+*.zip
+.env
+.env.*

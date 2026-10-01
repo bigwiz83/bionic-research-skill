@@ -1,0 +1,96 @@
+{
+  "schema_version": "1.0.0",
+  "data_mode": "synthetic",
+  "dataset_namespace": "SYN-PATTERN-001",
+  "participant_id": "P-TEST",
+  "task_id": "T-SYNTHETIC",
+  "adapter": "synthetic-export-v1",
+  "model_observation": {
+    "model_id": null,
+    "model_id_confirmed": false,
+    "settings_confirmed": false,
+    "temperature": null,
+    "top_p": null,
+    "context_length": null
+  },
+  "sessions": [
+    {
+      "session_id": "S-A",
+      "purpose": "task",
+      "approved": true,
+      "attempt_status": "cancelled",
+      "access": "available",
+      "events_file": "S-A.json",
+      "total_events": 18,
+      "end_verified": true,
+      "analysis_start_index": 18,
+      "read_receipts": [
+        "Generated entirely synthetic export; all declared rows available."
+      ]
+    },
+    {
+      "session_id": "S-B",
+      "purpose": "task",
+      "approved": true,
+      "attempt_status": "resumed",
+      "access": "available",
+      "events_file": "S-B.json",
+      "total_events": 4,
+      "end_verified": true,
+      "analysis_start_index": null,
+      "read_receipts": [
+        "Generated entirely synthetic export; all declared rows available."
+      ]
+    },
+    {
+      "session_id": "S-C",
+      "purpose": "task",
+      "approved": true,
+      "attempt_status": "failed",
+      "access": "available",
+      "events_file": "S-C.json",
+      "total_events": 6,
+      "end_verified": false,
+      "analysis_start_index": null,
+      "read_receipts": [
+        "Generated entirely synthetic export; all declared rows available."
+      ]
+    },
+    {
+      "session_id": "S-D",
+      "purpose": "task",
+      "approved": true,
+      "attempt_status": "interrupted",
+      "access": "missing_access",
+      "events_file": null,
+      "total_events": null,
+      "end_verified": false,
+      "analysis_start_index": null,
+      "read_receipts": []
+    },
+    {
+      "session_id": "S-E",
+      "purpose": "task",
+      "approved": false,
+      "attempt_status": "unknown",
+      "access": "available",
+      "events_file": "NEVER-OPEN.json",
+      "total_events": null,
+      "end_verified": false,
+      "analysis_start_index": null,
+      "read_receipts": []
+    },
+    {
+      "session_id": "S-ANALYSIS",
+      "purpose": "analysis",
+      "approved": true,
+      "attempt_status": "unknown",
+      "access": "available",
+      "events_file": "NEVER-OPEN.json",
+      "total_events": null,
+      "end_verified": false,
+      "analysis_start_index": null,
+      "read_receipts": []
+    }
+  ]
+}

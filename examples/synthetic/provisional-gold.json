@@ -1,0 +1,105 @@
+{
+  "origin": "AI developer-authored provisional oracle; no human adjudication yet",
+  "denominator": 12,
+  "included_events": 21,
+  "requested_sessions": 6,
+  "read_sessions": 3,
+  "complete_extraction": false,
+  "counts": {
+    "goal_specification": 1,
+    "task_decomposition": 1,
+    "delegation_control": 2,
+    "verification_request": 3,
+    "error_correction": 1,
+    "reuse_resume": 1,
+    "data_structure_inquiry": 1
+  },
+  "excluded_refs": [
+    "S-A/row-000014",
+    "S-A/row-000016",
+    "S-A/row-000017",
+    "S-A/row-000018"
+  ],
+  "entries": {
+    "S-A/row-000001": {
+      "categories": [
+        "delegation_control"
+      ],
+      "decision": "coded",
+      "ambiguity": null
+    },
+    "S-A/row-000004": {
+      "categories": [
+        "goal_specification"
+      ],
+      "decision": "coded",
+      "ambiguity": null
+    },
+    "S-A/row-000005": {
+      "categories": [
+        "data_structure_inquiry"
+      ],
+      "decision": "coded",
+      "ambiguity": null
+    },
+    "S-A/row-000006": {
+      "categories": [
+        "task_decomposition"
+      ],
+      "decision": "coded",
+      "ambiguity": null
+    },
+    "S-A/row-000007": {
+      "categories": [
+        "verification_request"
+      ],
+      "decision": "coded",
+      "ambiguity": null
+    },
+    "S-A/row-000010": {
+      "categories": [
+        "error_correction"
+      ],
+      "decision": "coded",
+      "ambiguity": null
+    },
+    "S-A/row-000011": {
+      "categories": [
+        "delegation_control"
+      ],
+      "decision": "coded",
+      "ambiguity": null
+    },
+    "S-A/row-000013": {
+      "categories": [
+        "verification_request"
+      ],
+      "decision": "coded",
+      "ambiguity": null
+    },
+    "S-B/row-000001": {
+      "categories": [
+        "reuse_resume"
+      ],
+      "decision": "coded",
+      "ambiguity": null
+    },
+    "S-B/row-000003": {
+      "categories": [],
+      "decision": "deferred",
+      "ambiguity": "ambiguous_intent"
+    },
+    "S-C/row-000001": {
+      "categories": [],
+      "decision": "deferred",
+      "ambiguity": "insufficient_context"
+    },
+    "S-C/row-000005": {
+      "categories": [
+        "verification_request"
+      ],
+      "decision": "coded",
+      "ambiguity": null
+    }
+  }
+}
