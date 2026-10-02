@@ -10,8 +10,9 @@ import cohort as c
 import compare_processes as p
 import grade_and_trace as g
 import behavior_atoms as b
+import observation_axes as x
 
-VERSION="0.4.1"
+VERSION="0.5.2"
 DETAIL_FIELDS=["goal","target","constraints","output_requirements","explicit_steps",
     "delegation_scope","control_boundary","verification_request","correction_issue",
     "reuse_resume","question_focus","evaluation_reference"]
@@ -79,6 +80,8 @@ def analyze(run_dirs,detail_path=None,atom_path=None):
         "observed_actions":list(actions.values()),"instruction_details":detail_doc,
         "detail_status":"source_abstractions_supplied_not_semantically_verified" if detail_path else "not_extracted_fields_unknown",
         "behavior_atoms":atom_doc,"atom_status":"observations_supplied_not_semantically_verified" if atom_path else "not_extracted_unknown",
+        "observation_axis_contract":"1.0.0",
+        "observation_axis_summary":x.summarize(atom_doc),
         "fine_coding_mismatches":atom_mismatches,
         "module_dictionary":structure["module_dictionary"],"processes":structure["processes"],
         "task_units":structure["units"],"coverage":coverage,"source_runs":structure["source_runs"],
@@ -94,7 +97,7 @@ def analyze(run_dirs,detail_path=None,atom_path=None):
 def report(value):
     lines=["# 개별 참여자 지시·모듈·과정 구조화", "",f"참여자 {value['participant_id']} / 과제 {len(value['task_units'])}개 / 세션 {len(value['processes'])}개.",
         "집단 그룹핑·정답 판정·점수·인터벤션 전략 개발은 수행하지 않았습니다. 이 파일은 후속 분석용 관찰 추출 자료입니다.",
-        f"세부 지시 구조 상태: {value['detail_status']}. 값은 원문을 재현한 인용이 아닌 근거 연결된 추상화이며 민감정보/의미 검토 대기입니다.","",
+        f"세부 지시 구조 상태: {value['detail_status']}. 값은 근거 연결된 추상화입니다.","",
         "| 과제 | 세션 | 관찰 모듈 순서 | 관찰 범위 |", "|---|---|---|---|"]
     for process in value["processes"]:
         lines.append(f"| {process['task_id']} | {process['session_id']} | {' → '.join(p.readable(s) for s in process['sequence']) or '미확인'} | {process['scope_status']} |")
@@ -123,11 +126,19 @@ def report(value):
         lines.append(f"| {row['event_id']} | {labels if row['atoms'] is not None else '미확인'} | {len(row['relations'] or [])} |")
     lines +=['',f"상세 행동과 기존 코딩 불일치 {len(value['fine_coding_mismatches'])}건. 원래 코딩은 덮어쓰지 않고 검토 대상으로 유지합니다.",
         'AI 진술과 도구 보고의 내용은 별도 근거로 추출하며 사용자 요청 충족이나 정답을 판정하지 않습니다.']
+    lines += ['', '관찰 축: 입력 가공·질문 방식·역할 설정·추론 대상. 사용자 진술과 원본 대조 관찰을 구별합니다.',
+        '| 사용자 사건 | 입력 가공 | 질문 방식 | 역할 설정 | 추론 대상 |', '|---|---|---|---|---|']
+    for row in value['behavior_atoms']['entries']:
+        axes=x.from_row(row)
+        cells=['미확인' if axes[axis] is None else (' / '.join(item['code']+' ('+item['basis']+')' for item in axes[axis]) or '읽은 범위에 관찰 없음') for axis in x.AXES]
+        lines.append('| '+row['event_id']+' | '+' | '.join(cells)+' |')
+    for axis,counts in value['observation_axis_summary'].items():
+        lines.append(f"- {axis}: 사용자 사건 {counts['total_user_events']}개 중 미확인 {counts['unknown_events']}개, 관찰 없음 {counts['observed_absent_events']}개, 관찰값 있음 {counts['events_with_observations']}개. 복수 코드는 중복될 수 있습니다.")
     lines +=["", "지시 상세 항목은 목표·대상·조건·출력 요구·명시 단계·위임 범위·통제 경계·검증 요청·교정 대상·재사용·질문 초점·평가 기준 참조입니다.",
         "null은 확인 못함, []는 읽은 범위에서 해당 항목이 관찰되지 않음입니다. 둘을 행동 없음으로 합치지 않습니다.",
         "AI/도구 사건과 사용자 지시는 별개이며 같은 발화의 복수 패턴에 순서를 만들지 않습니다. 세션 사이를 이어 붙이지 않습니다.",
         "원본 순번·시각·최종 결과가 없으면 누락으로 남깁니다. 최종 숫자는 관찰값일 뿐 정답인지 판정하지 않습니다.",
-        "자동 구조 검사는 원문 의미·민감정보·분류 타당성을 확인하지 않습니다. 기관 내부에서 근거와 출력 내용을 검토합니다.", ""]
+        "자동 구조 검사는 관찰 의미·분류 타당성을 확인하지 않습니다.", ""]
     return "\n".join(lines)
 
 
@@ -139,9 +150,10 @@ def build(run_dirs,out_root,detail_path=None,atom_path=None):
         e.write_json(folder/"instruction-details.json",value["instruction_details"])
         e.write_json(folder/'behavior-atoms.json',value['behavior_atoms'])
         p.write_csv(folder/'behavior-atoms.csv',b.csv_rows(value['behavior_atoms']))
+        p.write_csv(folder/'observation-axes.csv',x.csv_rows(value['behavior_atoms']))
         p.write_csv(folder/"modules.csv",[{"process_id":proc["process_id"],"task_id":proc["task_id"],"session_id":proc["session_id"],**m} for proc in value["processes"] for m in proc["modules"]])
         (folder/"report.md").write_text(report(value),encoding="utf-8")
-        names=["session-structure.json","instruction-details.json","behavior-atoms.json","behavior-atoms.csv","modules.csv","report.md"]
+        names=["session-structure.json","instruction-details.json","behavior-atoms.json","behavior-atoms.csv","observation-axes.csv","modules.csv","report.md"]
         e.write_json(folder/"integrity.json",{"files":{name:hashlib.sha256((folder/name).read_bytes()).hexdigest() for name in names}})
     except (e.ContractError,OSError) as error:
         e.write_json(folder/"failure.json",{"status":"failed","error_code":str(error) if isinstance(error,e.ContractError) else "filesystem_error"})

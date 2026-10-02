@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:bionic-research-skill:1.0.0",
-  "title": "Bionic research synthetic intake and output contract",
+  "title": "Bionic normalized synthetic and research session intake and output contract",
   "$defs": {
     "span": {
       "type": "object",
@@ -162,11 +162,14 @@
           "const": "1.0.0"
         },
         "data_mode": {
-          "const": "synthetic"
+          "enum": [
+            "synthetic",
+            "research"
+          ]
         },
         "dataset_namespace": {
           "type": "string",
-          "pattern": "SYN-[A-Z0-9-]{1,64}"
+          "pattern": "(?:SYN|DS)-[A-Z0-9-]{1,64}"
         },
         "participant_id": {
           "type": "string",
@@ -893,11 +896,14 @@
           "const": "instruction-patterns-0.1.0"
         },
         "data_mode": {
-          "const": "synthetic"
+          "enum": [
+            "synthetic",
+            "research"
+          ]
         },
         "dataset_namespace": {
           "type": "string",
-          "pattern": "SYN-[A-Z0-9-]{1,64}"
+          "pattern": "(?:SYN|DS)-[A-Z0-9-]{1,64}"
         },
         "adapter": {
           "enum": [
@@ -1028,7 +1034,6 @@
         "contract_sha256",
         "skill_sha256",
         "taxonomy_sha256",
-        "sensitive_review",
         "errors"
       ],
       "additionalProperties": false

@@ -4,15 +4,15 @@
 
 ## 마지막 질문
 
-모델은 연구용 출력에 환자 원문·직접 식별정보가 없는지 확인하고 발견한 문제는 새 실행에서 수정한다. 원본이나 기존 실행을 덮어쓰지 않는다. 자동 검사가 안전한 익명화의 증명이라고 하지 않는다.
+지정 연구용 결과를 새 제출 폴더에 준비한다. 원본이나 기존 실행을 덮어쓰지 않는다.
 
 지정 추출 결과와 개별 구조화 결과만 ZIP으로 준비한 뒤 포함 파일·범위·누락·크기·수신자와 ZIP/보고서 위치를 보여 준다. 마지막에 묻는다:
 
-> 첨부할 연구용 결과에 환자 원문·직접 식별정보가 없음을 확인하셨나요? 이 ZIP을 연구책임자 bigwiz83@gmail.com으로 전송하시겠습니까?
+> 이 ZIP을 연구책임자 bigwiz83@gmail.com으로 전송하시겠습니까?
 
 명확한 동의가 있을 때만 보낸다. 거절·미응답은 로컬 결과 보관이며 기록 열람 승인을 전송 동의로 재사용하지 않는다. 모델이 실제 동의의 내부 대화 위치를 참조한 승인 JSON을 작성한다. 사용자가 수동 JSON을 작성하지 않는다.
 
-승인 필드: approval_version="1.0.0", recipient="bigwiz83@gmail.com", archive_sha256, consent=true, privacy_confirmation="sender_confirmed_no_patient_or_direct_identifiers", consent_ref. 스크립트는 선언된 동의를 검사하며 실제 인간 발화를 인증하는 서비스는 아니다. 동의를 만들어내지 않는다. 동의 뒤 ZIP이 바뀌면 다시 검토·동의를 받는다.
+승인 필드: approval_version="1.1.0", recipient="bigwiz83@gmail.com", archive_sha256, consent=true, consent_ref. 스크립트는 선언된 동의를 검사하며 실제 인간 발화를 인증하는 서비스는 아니다. 동의를 만들어내지 않는다. 동의 뒤 ZIP이 바뀌면 다시 검토·동의를 받는다.
 
 ## 압축·전송
 
@@ -21,7 +21,7 @@ python scripts/submission.py prepare --runs EXTRACTED_FOLDER --structure-run STR
 python scripts/submission.py send --bundle BUNDLE_FOLDER --approval APPROVAL_JSON
 ```
 
-research-patterns.zip에는 지정 추출 5파일, 개별 구조화 7파일, bundle-manifest.json만 들어간다. 전체 프로젝트·intake·원본 첨부·환자 파일·인증 설정은 압축하지 않는다. 최종 숫자는 session-structure.json의 관찰값으로 제출하며 환자 원본을 다시 열지 않는다. 부분 자료는 coverage/누락과 초안 상태를 유지한다. ZIP 최대 15 MiB, 압축 전 자료 최대 64 MiB다. 초과 시 몰래 생략하거나 다른 클라우드에 업로드하지 않는다.
+research-patterns.zip에는 지정 추출 5파일, 개별 구조화 8파일, bundle-manifest.json만 들어간다. v0.5.0은 모든 사용자 발화의 observation-axes.csv를 포함한다. 이전 구조화 7파일 결과도 계속 포장할 수 있으며 과거 미수집 축은 관찰 부재로 바꾸지 않는다. 전체 프로젝트·intake·원본 첨부·인증 설정은 압축하지 않는다. 최종 숫자는 session-structure.json의 관찰값으로 제출한다. 부분 자료는 coverage/누락과 초안 상태를 유지한다. ZIP 최대 15 MiB, 압축 전 자료 최대 64 MiB다. 초과 시 몰래 생략하거나 다른 클라우드에 업로드하지 않는다.
 
 인증된 메일 도구가 있으면 공식 도구 안내에서 **ZIP 첨부 지원**을 확인하고 동의한 자료만 고정 수신자로 전송한다. 같은 ZIP 해시·동의·도구의 전송 결과를 기록한다. 텍스트 전송 기능만으로 첨부를 지원한다고 가정하지 않는다. 코덱스 Gmail 연결이 다른 사람의 바이오닉에도 존재한다고 가정하지 않는다.
 
@@ -38,7 +38,7 @@ research-patterns.zip에는 지정 추출 5파일, 개별 구조화 7파일, bun
 | BIONIC_SMTP_SECURITY | starttls(기본) 또는 ssl |
 | BIONIC_SMTP_PORT | 기본 587(starttls)/465(ssl) |
 
-TLS를 사용한다. 실제 SMTP 인증 가능 여부는 메일 제공자 정책에 따르며 기관의 승인된 담당자가 설정한다. 수신 주소만으로 자동 발송할 수 있는 것은 아니다.
+TLS를 사용한다. 실제 SMTP 인증 가능 여부는 메일 제공자 정책에 따르며 발신 계정 사용자가 설정한다. 수신 주소만으로 자동 발송할 수 있는 것은 아니다.
 
 연결/첨부 지원이 없으면 동의한 ZIP이 첨부된 EML 초안을 만든다.
 

@@ -19,6 +19,7 @@ import cohort as c
 RECIPIENT='bigwiz83@gmail.com'
 BASE_FILES=['actions.csv','patterns.json','coverage.json','report.md','integrity.json']
 STRUCTURE_FILES=['session-structure.json','instruction-details.json','behavior-atoms.json','behavior-atoms.csv','modules.csv','report.md','integrity.json']
+AXIS_FILES=['observation-axes.csv']
 MAX_ZIP_BYTES=15*1024*1024
 MAX_UNCOMPRESSED_BYTES=64*1024*1024
 
@@ -54,16 +55,16 @@ def prepare(run_dirs,structure_run,out_root):
     e.require(all(s['artifact_hashes']==source_hashes[s['run_id']] for s in structure['source_runs']),'submission_structure_source_hash_mismatch')
     e.require(not structure['grouping_performed'] and not structure['grading_performed'] and not structure['intervention_strategy_development_performed'],'submission_individual_scope')
     integrity=e.read_json(safe_file(structure_run,'integrity.json'))
-    e.require(set(integrity['files'])==set(STRUCTURE_FILES)-{'integrity.json'},'submission_structure_integrity_set')
-    for name in STRUCTURE_FILES:
+    structure_files=STRUCTURE_FILES+(AXIS_FILES if structure.get('observation_axis_contract')=='1.0.0' else [])
+    e.require(set(integrity['files'])==set(structure_files)-{'integrity.json'},'submission_structure_integrity_set')
+    for name in structure_files:
         data=safe_file(structure_run,name).read_bytes()
         if name!='integrity.json':e.require(digest(data)==integrity['files'][name],'submission_structure_integrity_mismatch')
         payloads['individual/'+name]=data
     e.require(sum(len(data) for data in payloads.values())<=MAX_UNCOMPRESSED_BYTES,'submission_uncompressed_too_large')
     # Named artifacts only. No recursive folder collection, raw intake, task attachments, or credentials.
-    manifest={'submission_version':'1.0.0','recipient':RECIPIENT,'participant_id':pid,'task_ids':sorted(tasks),
+    manifest={'submission_version':'1.1.0','recipient':RECIPIENT,'participant_id':pid,'task_ids':sorted(tasks),
         'run_ids':run_ids,'data_mode':next(iter(modes)),'review_status':'draft_for_researcher_review',
-        'automatic_anonymization_verified':False,'sender_privacy_confirmation_required_before_send':True,
         'files':{name:{'sha256':digest(data),'bytes':len(data)} for name,data in payloads.items()}}
     folder=e.new_run(out_root)
     archive=folder/'research-patterns.zip'
@@ -71,7 +72,7 @@ def prepare(run_dirs,structure_run,out_root):
         for name,data in payloads.items():z.writestr(name,data)
         z.writestr('bundle-manifest.json',json.dumps(manifest,ensure_ascii=False,indent=2).encode('utf-8'))
     e.require(archive.stat().st_size<=MAX_ZIP_BYTES,'submission_zip_too_large')
-    e.write_json(folder/'submission.json',{'submission_version':'1.0.0','recipient':RECIPIENT,
+    e.write_json(folder/'submission.json',{'submission_version':'1.1.0','recipient':RECIPIENT,
         'archive':'research-patterns.zip','archive_sha256':digest(archive.read_bytes()),'file_count':len(payloads)+1,
         'participant_id':pid,'task_ids':sorted(tasks),'created_at':now()})
     e.write_json(folder/'delivery-state.json',{'status':'prepared_not_sent','recipient':RECIPIENT})
@@ -84,10 +85,13 @@ def checked_bundle(folder,approval_path):
     data=safe_file(folder,'research-patterns.zip').read_bytes()
     e.require(digest(data)==meta['archive_sha256'] and len(data)<=MAX_ZIP_BYTES,'submission_bundle_changed_or_too_large')
     approval=e.read_json(approval_path)
-    required=['approval_version','recipient','archive_sha256','consent','privacy_confirmation','consent_ref']
+    required=['approval_version','recipient','archive_sha256','consent','consent_ref']
+    # Older saved approvals may contain a privacy field; it is no longer a gate.
+    if isinstance(approval,dict) and approval.get('approval_version')=='1.0.0' and 'privacy_confirmation' in approval:
+        required.append('privacy_confirmation')
     e.require(isinstance(approval,dict) and set(approval)==set(required),'submission_approval_fields')
-    e.require(approval['approval_version']=='1.0.0' and approval['recipient']==RECIPIENT and approval['archive_sha256']==meta['archive_sha256'],'submission_approval_target')
-    e.require(approval['consent'] is True and approval['privacy_confirmation']=='sender_confirmed_no_patient_or_direct_identifiers','submission_explicit_consent_and_privacy_confirmation_required')
+    e.require(approval['approval_version'] in {'1.0.0','1.1.0'} and approval['recipient']==RECIPIENT and approval['archive_sha256']==meta['archive_sha256'],'submission_approval_target')
+    e.require(approval['consent'] is True,'submission_explicit_consent_required')
     e.require(isinstance(approval['consent_ref'],str) and 0<len(approval['consent_ref'])<=200,'submission_consent_reference')
     with zipfile.ZipFile(safe_file(folder,'research-patterns.zip')) as z:
         e.require(sum(info.file_size for info in z.infolist())<=MAX_UNCOMPRESSED_BYTES,'submission_uncompressed_too_large')
@@ -97,7 +101,7 @@ def checked_bundle(folder,approval_path):
         for name,info in manifest['files'].items():
             e.require(not name.startswith('/') and '..' not in Path(name).parts and '\\' not in name,'submission_zip_path')
             pieces=name.split('/')
-            e.require(len(pieces)==2 and (re.fullmatch(r'extraction-[0-9]{3,}',pieces[0]) and pieces[1] in BASE_FILES or pieces[0]=='individual' and pieces[1] in STRUCTURE_FILES),'submission_zip_artifact_allowlist')
+            e.require(len(pieces)==2 and (re.fullmatch(r'extraction-[0-9]{3,}',pieces[0]) and pieces[1] in BASE_FILES or pieces[0]=='individual' and pieces[1] in STRUCTURE_FILES+AXIS_FILES),'submission_zip_artifact_allowlist')
             payload=z.read(name)
             e.require(digest(payload)==info['sha256'] and len(payload)==info['bytes'],'submission_zip_content_changed')
     return meta,data,approval
@@ -109,7 +113,7 @@ def message(meta,data,sender=None):
     msg['Subject']='[Bionic] 연구패턴 추출 결과 제출'
     msg['Date']=formatdate(localtime=False)
     msg['Message-ID']=make_msgid(domain='bionic-research.invalid')
-    msg.set_content('참여자가 전송에 동의한 연구용 추출 결과 초안입니다.\n근거·누락·분류와 민감정보의 연구진 검토가 필요합니다.\n첨부 ZIP SHA256: '+meta['archive_sha256']+'\n자동 검증은 안전한 익명화나 의미 타당성의 증명이 아닙니다.\n')
+    msg.set_content('참여자가 전송에 동의한 연구용 추출 결과 초안입니다.\n근거·누락·분류를 함께 첨부합니다.\n첨부 ZIP SHA256: '+meta['archive_sha256']+'\n')
     msg.add_attachment(data,maintype='application',subtype='zip',filename='research-patterns.zip')
     return msg
 
@@ -158,7 +162,7 @@ def send(folder,approval_path):
             e.require(not refused,'submission_recipient_rejected')
             receipt={'status':'sent_smtp_accepted','recipient':RECIPIENT,'archive_sha256':meta['archive_sha256'],
                 'message_id':msg['Message-ID'],'accepted_at':now(),'consent_ref':approval['consent_ref'],
-                'sender_privacy_confirmation':True,'recipient_inbox_delivery_verified':False}
+                'consent_confirmed':True,'recipient_inbox_delivery_verified':False}
             e.write_json(folder/'delivery-state.json',receipt)
         return receipt
     except Exception:

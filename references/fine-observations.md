@@ -1,12 +1,12 @@
-# 세부 행동·반응 관찰 계약 v1.1.0
+# 세부 행동·반응 관찰 계약 v1.2.0
 
 기본 7유형과 기존 상세 12항목을 유지한다. 한 발화의 여러 행동을 atom으로 나누되 모듈(한 사용자 발화+뒤따른 사건)의 개수는 바꾸지 않는다. 모델이 직접 읽은 관찰을 작성하며 Python은 의미를 추출하지 않는다.
 
-behavior-atoms.json: 최상위 atom_schema_version="1.1.0", participant_id, entries, responses. entries에는 모든 포함 사용자 사건, responses에는 모든 포함 AI/도구 사건을 한 번씩 기록한다. 기존 1.0.0의 22개 세부 유형 입력은 그대로 읽을 수 있다. 새 탐색 유형은 1.1.0으로 작성한다.
+behavior-atoms.json: 최상위 atom_schema_version="1.2.0", participant_id, entries, responses. entries에는 모든 포함 사용자 사건, responses에는 모든 포함 AI/도구 사건을 한 번씩 기록한다. 기존 1.0.0/1.1.0 입력은 그대로 읽을 수 있다. 새 결과는 1.2.0으로 작성하며 [발화별 관찰 축](observation-axes.md)을 각 사용자 행에 추가한다. 기존 유형·속성·탐색 상세·반응은 유지한다.
 
 ## 사용자 행동
 
-사용자 항목은 event_id, observed_text_length, atoms, relations다. 미확인일 때 atoms/relations=null, 읽은 범위에 지시 행동이 없으면 atoms=[]/relations=[]다. 배열 위치는 실행 순서가 아니다.
+사용자 항목은 event_id, observed_text_length, atoms, relations, observation_axes다. 미확인일 때 atoms/relations=null, 읽은 범위에 지시 행동이 없으면 atoms=[]/relations=[]다. observation_axes는 독립적으로 4축의 null/[]/관찰 배열을 기록한다. 배열 위치는 실행 순서가 아니다.
 
 atom 필드: atom_id(A-로 시작하는 고유 코드), category(7개 코드 또는 null), subtype, facets, evidence. subtype은 scripts/behavior_atoms.py의 SUBTYPES를 따른다. 해당 세부 유형을 관찰 못하면 other_explicit이고 기본 유형도 판단 못하면 category=null이다.
 
@@ -20,7 +20,7 @@ atom 필드: atom_id(A-로 시작하는 고유 코드), category(7개 코드 또
 | 재사용·재개 | 산출물 재사용·작업 재개 |
 | 자료구조 파악 | 구조 확인 |
 
-facets에는 8키를 모두 둔다: target(대상), method(방법), criterion(판단 기준), constraints(포함/제외/제약), requested_output(출력 요구), trigger_condition(실행 조건), control_boundary(위임/승인/중단 경계), prior_result_reference(이전 산출물 참조). 각 값은 null(미확인), [](읽은 범위에 명시 내용 없음), 또는 [{value,evidence}]다. value는 원문·환자정보를 복사하지 않은 최대 800자 추상화다.
+facets에는 8키를 모두 둔다: target(대상), method(방법), criterion(판단 기준), constraints(포함/제외/제약), requested_output(출력 요구), trigger_condition(실행 조건), control_boundary(위임/승인/중단 경계), prior_result_reference(이전 산출물 참조). 각 값은 null(미확인), [](읽은 범위에 명시 내용 없음), 또는 [{value,evidence}]다. value는 관찰 내용을 추상화한 최대 800자 추상화다.
 
 evidence는 자기 발화의 {ref,start,end} 목록이다. Python Unicode code point 기준 [start,end)이며 observed_text_length는 모델이 읽은 정규화 문자열 길이의 주장이다. 자동 검사는 실제 길이·의미를 원문으로 독립 확인하지 않는다.
 
@@ -49,9 +49,9 @@ relations에는 같은 발화에서 원문이 명시한 관계만 {from_atom,to_
 | selection_criteria | 출처를 선택할 때 요구한 관련성·품질 기준 |
 | claim_reference | 근거 탐색 대상인 기존 주장/결과의 명시 참조; 주장 내용 미확인은 별도로 유지 |
 
-탐색 대상은 facets.target, 검색 방법은 facets.method에도 관찰하며 8속성은 그대로 유지한다. 원문 전체 검색식·환자정보·개인 경로는 복사하지 않는다. AI가 스스로 만든 검색어·선정 기준은 사용자 필드에 넣지 않고 해당 AI/도구 response의 method 등으로 분리한다. 사용자 요청만으로 실제 검색·출처 발견·근거 타당성을 확정하지 않는다. 분석 단계에서는 요청을 재실행하거나 새로운 문헌을 검색하지 않는다.
+탐색 대상은 facets.target, 검색 방법은 facets.method에도 관찰하며 8속성은 그대로 유지한다. 원문 전체 검색식·개인 경로는 복사하지 않는다. AI가 스스로 만든 검색어·선정 기준은 사용자 필드에 넣지 않고 해당 AI/도구 response의 method 등으로 분리한다. 사용자 요청만으로 실제 검색·출처 발견·근거 타당성을 확정하지 않는다. 분석 단계에서는 요청을 재실행하거나 새로운 문헌을 검색하지 않는다.
 
-다른 세부 유형에는 search_details를 넣지 않는다. 기존 1.0.0 입력에서 이 항목이 없는 것은 미수집이며 탐색이 없었다는 뜻이 아니다. CSV에도 search_details JSON을 보존한다. 출력 파일 이름과 제출 ZIP 허용 목록은 바뀌지 않는다.
+다른 세부 유형에는 search_details를 넣지 않는다. 기존 1.0.0 입력에서 이 항목이 없는 것은 미수집이며 탐색이 없었다는 뜻이 아니다. CSV에도 search_details JSON을 보존한다. 기존 출력 파일 이름은 유지하며 새 observation-axes.csv를 제출 ZIP에 추가한다.
 
 ## AI·도구 반응
 
@@ -63,4 +63,4 @@ response 항목은 event_id, observed_text_length, observations다. observations
 python scripts/structure_session.py --runs RESULT_FOLDER --details DETAILS_JSON --atoms ATOMS_JSON --out-root OUTPUT_FOLDER
 ```
 
-모델이 상세 JSON을 작성한다. 새 실행에 session-structure.json, instruction-details.json, behavior-atoms.json, behavior-atoms.csv, modules.csv, report.md, integrity.json을 남긴다. --atoms 생략은 세부 관찰 미확인이며 추출 완료가 아니다.
+모델이 상세 JSON을 작성한다. 새 실행에 session-structure.json, instruction-details.json, behavior-atoms.json, behavior-atoms.csv, observation-axes.csv, modules.csv, report.md, integrity.json을 남긴다. --atoms 생략은 세부 관찰 미확인이며 추출 완료가 아니다.

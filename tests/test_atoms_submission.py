@@ -31,6 +31,8 @@ class AtomTests(unittest.TestCase):
     def doc(self):
         value=s.analyze([self.runs[0]])
         doc=copy.deepcopy(value['behavior_atoms'])
+        doc['atom_schema_version']='1.1.0'
+        for row in doc['entries']:row.pop('observation_axes',None)
         by_id={a['event_id']:a for a in value['observed_actions']}
         for index,row in enumerate(doc['entries'],1):
             a=by_id[row['event_id']]
@@ -208,8 +210,8 @@ class SubmissionTests(unittest.TestCase):
     def bundle(self):return m.prepare([self.runs[0]],self.structured,self.root/'bundles')
     def approval(self,folder,**updates):
         meta=e.read_json(folder/'submission.json')
-        doc={'approval_version':'1.0.0','recipient':m.RECIPIENT,'archive_sha256':meta['archive_sha256'],'consent':True,
-            'privacy_confirmation':'sender_confirmed_no_patient_or_direct_identifiers','consent_ref':'S-SYN-CONSENT/row-000001'}
+        doc={'approval_version':'1.1.0','recipient':m.RECIPIENT,'archive_sha256':meta['archive_sha256'],'consent':True,
+            'consent_ref':'S-SYN-CONSENT/row-000001'}
         doc.update(updates);path=folder/'approval.json';e.write_json(path,doc);return path
     def env(self):return patch.dict(os.environ,{'BIONIC_SMTP_HOST':'smtp.synthetic.invalid','BIONIC_SMTP_PORT':'587',
         'BIONIC_SMTP_USER':'synthetic@sender.invalid','BIONIC_SMTP_PASSWORD':'synthetic-test-secret','BIONIC_SMTP_SECURITY':'starttls','BIONIC_SMTP_FROM':'synthetic@sender.invalid'})
@@ -234,11 +236,26 @@ class SubmissionTests(unittest.TestCase):
             with self.assertRaisesRegex(e.ContractError,'integrity_mismatch'):self.bundle()
         finally:(self.structured/'report.md').write_bytes(original)
 
-    def test_decline_missing_privacy_and_wrong_recipient_never_open_smtp(self):
-        for changes in [{'consent':False},{'privacy_confirmation':'pending'},{'recipient':'other@synthetic.invalid'}]:
+    def test_decline_missing_consent_reference_and_wrong_recipient_never_open_smtp(self):
+        for changes in [{'consent':False},{'consent_ref':''},{'recipient':'other@synthetic.invalid'}]:
             folder=self.bundle();approval=self.approval(folder,**changes)
             with patch.object(m.smtplib,'SMTP',side_effect=AssertionError('must not connect')):
                 with self.assertRaises(e.ContractError):m.send(folder,approval)
+
+    def test_privacy_confirmation_removed_and_legacy_field_not_a_gate(self):
+        folder=self.bundle()
+        approval=self.approval(folder)
+        self.assertNotIn('privacy_confirmation',e.read_json(approval))
+        with zipfile.ZipFile(folder/'research-patterns.zip') as z:
+            manifest=json.loads(z.read('bundle-manifest.json'))
+            self.assertNotIn('sender_privacy_confirmation_required_before_send',manifest)
+        with patch.object(m.smtplib,'SMTP',side_effect=AssertionError('draft must not send')):
+            eml=m.make_eml(folder,approval)
+        self.assertNotIn('민감정보',BytesParser(policy=policy.default).parsebytes(eml.read_bytes()).get_body(preferencelist=('plain',)).get_content())
+        for updates in [{'approval_version':'1.0.0'},
+                        {'approval_version':'1.0.0','privacy_confirmation':'pending'}]:
+            folder=self.bundle()
+            m.checked_bundle(folder,self.approval(folder,**updates))
 
     def test_changed_zip_or_wrong_hash_never_sent(self):
         folder=self.bundle();approval=self.approval(folder)

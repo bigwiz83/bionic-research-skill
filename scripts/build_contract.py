@@ -55,8 +55,8 @@ def contract():
         "access": enum(["available", "missing_access", "unreadable", "missing_record"]),
         "events_file": nullable(string()), "total_events": nullable_integer, "end_verified": boolean,
         "analysis_start_index": nullable(positive), "read_receipts": arr(string())})
-    definitions["manifest"] = obj({"schema_version": {"const": "1.0.0"}, "data_mode": {"const": "synthetic"},
-        "dataset_namespace": string(r"SYN-[A-Z0-9-]{1,64}"), "participant_id": string(r"P-[A-Z0-9-]{1,48}"),
+    definitions["manifest"] = obj({"schema_version": {"const": "1.0.0"}, "data_mode": enum(["synthetic", "research"]),
+        "dataset_namespace": string(r"(?:SYN|DS)-[A-Z0-9-]{1,64}"), "participant_id": string(r"P-[A-Z0-9-]{1,48}"),
         "task_id": string(r"T-[A-Z0-9-]{1,48}"), "adapter": enum(["synthetic-export-v1", "bionic-introspection-normalized-unverified"]),
         "model_observation": reference("model"), "sessions": arr(reference("session"), 1)})
     definitions["event"] = obj({"source_index": positive, "source_id": nullable(string()),
@@ -94,8 +94,8 @@ def contract():
         "unknown_timestamps": integer, "end_verified": boolean, "receipt_sha256": nullable(hash_value),
         "error_code": enum([None, "json_unreadable_or_invalid"])})
     definitions["coverage"] = obj({"skill_version": {"const": "0.1.0"}, "schema_version": {"const": "1.0.0"},
-        "taxonomy_version": {"const": "instruction-patterns-0.1.0"}, "data_mode": {"const": "synthetic"},
-        "dataset_namespace": string(r"SYN-[A-Z0-9-]{1,64}"), "adapter": enum(["synthetic-export-v1", "bionic-introspection-normalized-unverified"]),
+        "taxonomy_version": {"const": "instruction-patterns-0.1.0"}, "data_mode": enum(["synthetic", "research"]),
+        "dataset_namespace": string(r"(?:SYN|DS)-[A-Z0-9-]{1,64}"), "adapter": enum(["synthetic-export-v1", "bionic-introspection-normalized-unverified"]),
         "complete_extraction": boolean, "requested_sessions": positive, "requested_task_sessions": integer,
         "read_sessions": integer, "included_events": integer, "included_user_events": integer,
         "sessions": arr(reference("coverage_session"), 1), "source_hashes": arr(obj({"session_id": sid, "sha256": hash_value})),
@@ -103,9 +103,9 @@ def contract():
         "implementation_sha256": hash_value, "contract_sha256": hash_value, "skill_sha256": hash_value, "taxonomy_sha256": hash_value,
         "sensitive_review": {"const": "pending_human_review"}, "errors": arr(string()),
         "run_id": string(r"run-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{32}"), "created_at": {"type": "string", "format": "date-time"}},
-        optional=["run_id", "created_at"])
+        optional=["run_id", "created_at", "sensitive_review"])
     return {"$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "urn:bionic-research-skill:1.0.0",
-            "title": "Bionic research synthetic intake and output contract", "$defs": definitions}
+            "title": "Bionic normalized synthetic and research session intake and output contract", "$defs": definitions}
 
 
 if __name__ == "__main__":

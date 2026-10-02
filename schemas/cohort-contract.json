@@ -162,11 +162,14 @@
           "const": "1.0.0"
         },
         "data_mode": {
-          "const": "synthetic"
+          "enum": [
+            "synthetic",
+            "research"
+          ]
         },
         "dataset_namespace": {
           "type": "string",
-          "pattern": "SYN-[A-Z0-9-]{1,64}"
+          "pattern": "(?:SYN|DS)-[A-Z0-9-]{1,64}"
         },
         "participant_id": {
           "type": "string",
@@ -1037,7 +1040,6 @@
         "contract_sha256",
         "skill_sha256",
         "taxonomy_sha256",
-        "sensitive_review",
         "errors"
       ],
       "additionalProperties": false

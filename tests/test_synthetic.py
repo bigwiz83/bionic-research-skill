@@ -203,10 +203,30 @@ class SyntheticTests(unittest.TestCase):
         with self.assertRaises(e.ContractError):
             self.derive()
 
-    def test_actual_research_mode_rejected(self):
-        self.manifest["data_mode"] = "approved_research"
+    def test_unsupported_mode_rejected(self):
+        self.manifest["data_mode"] = "unrecognized_mode"
         with self.assertRaises(e.ContractError):
             self.derive()
+
+    def test_research_mode_normalized_intake_pipeline_using_invented_records_only(self):
+        # These are still wholly invented fixtures, never actual participant/patient records.
+        self.manifest['data_mode']='research'
+        self.manifest['dataset_namespace']='DS-INVENTED-RESEARCH-MODE-TEST'
+        self.manifest['adapter']='bionic-introspection-normalized-unverified'
+        folder=self.build()
+        coverage=e.read_json(folder/'coverage.json')
+        self.assertEqual(coverage['data_mode'],'research')
+        self.assertEqual(coverage['dataset_namespace'],self.manifest['dataset_namespace'])
+        self.assertNotIn('sensitive_review',coverage)
+        self.assertIn('정규화 연구 세션 기록',(folder/'report.md').read_text(encoding='utf-8'))
+        import structure_session as structure
+        import submission
+        import zipfile
+        individual=structure.build([folder],self.root/'individual')
+        bundle=submission.prepare([folder],individual,self.root/'submissions')
+        with zipfile.ZipFile(bundle/'research-patterns.zip') as z:
+            self.assertEqual(json.loads(z.read('bundle-manifest.json'))['data_mode'],'research')
+        self.assertEqual(e.read_json(bundle/'delivery-state.json')['status'],'prepared_not_sent')
 
     def test_model_confirmation_cannot_contradict_observed_values(self):
         self.manifest["model_observation"]["model_id"] = "unconfirmed-model"

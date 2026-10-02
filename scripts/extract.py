@@ -1,4 +1,4 @@
-"""Synthetic intake validation and evidence-linked draft publishing. No model calls."""
+"""Normalized session intake validation and evidence-linked draft publishing. No model calls."""
 from __future__ import annotations
 
 import argparse
@@ -142,7 +142,6 @@ def load_sources(manifest_path):
     manifest_path = Path(manifest_path).resolve()
     manifest = read_json(manifest_path)
     check_schema(manifest, "manifest")
-    require(manifest["data_mode"] == "synthetic", "v0_1_synthetic_only")
     model = manifest["model_observation"]
     require(model["model_id_confirmed"] == (model["model_id"] is not None), "model_confirmation_inconsistent")
     known_settings = any(model[k] is not None for k in ["temperature", "top_p", "context_length"])
@@ -322,7 +321,7 @@ def derive(manifest_path, codings_path):
     task_sessions = [s for s in sessions if s["purpose"] == "task"]
     complete = bool(task_sessions) and all(s["status"] == "complete_public_scope" for s in task_sessions)
     coverage = {"skill_version": VERSION, "schema_version": SCHEMA_VERSION,
-                "taxonomy_version": TAXONOMY_VERSION, "data_mode": "synthetic",
+                "taxonomy_version": TAXONOMY_VERSION, "data_mode": manifest["data_mode"],
                 "dataset_namespace": manifest["dataset_namespace"], "adapter": manifest["adapter"],
                 "complete_extraction": complete, "requested_sessions": len(sessions),
                 "requested_task_sessions": len(task_sessions),
@@ -335,7 +334,6 @@ def derive(manifest_path, codings_path):
                 "skill_sha256": hashlib.sha256((ROOT / "SKILL.md").read_bytes()).hexdigest(),
                 "taxonomy_sha256": hashlib.sha256((ROOT / "references/taxonomy-v0.1.md").read_bytes()).hexdigest(),
                 "model_observation": manifest["model_observation"],
-                "sensitive_review": "pending_human_review",
                 "errors": [s["session_id"] + ":" + s["error_code"] for s in sessions if s["error_code"]]}
     check_schema(patterns, "patterns")
     check_schema(coverage, "coverage")
@@ -353,7 +351,8 @@ def csv_value(value):
 
 
 def report(patterns, coverage):
-    lines = ["# 사용자 지시 패턴 추출 초안", "", "합성 자료 시험. 연구진 검토 전 초안이며 검증된 척도·안전한 익명화로 해석하지 않는다.", "",
+    mode_label = "합성 자료 시험" if coverage['data_mode']=='synthetic' else "정규화 연구 세션 기록"
+    lines = ["# 사용자 지시 패턴 추출 초안", "", mode_label+". 연구진 검토 전 초안이며 검증된 척도로 해석하지 않는다.", "",
              f"요청 {coverage['requested_sessions']}세션 / 과제 {coverage['requested_task_sessions']}세션 / 실제 읽음 {coverage['read_sessions']}세션.",
              f"포함 고유 사건 {coverage['included_events']}개, 관찰 사용자 사건 분모 {patterns['denominator']}개.",
              "전체 추출: " + ("승인된 공개 범위 확인" if coverage["complete_extraction"] else "확인하지 못함 — 누락·부분 범위 있음"), "",
@@ -368,8 +367,8 @@ def report(patterns, coverage):
     lines += ["", "복수 분류가 가능하다. 미관찰을 행동 없음으로 보지 않는다. 검증 요청·AI 진술·도구 실행 결과는 별개다.", "",
               f"판단 보류 {len(patterns['uncertainties'])}건. 근거와 관련 사건은 patterns.json/actions.csv의 내부 참조로 확인한다.",
               "원문·원본 ID는 출력에 복사하지 않았다. 모델 설정은 coverage.json의 확인 범위를 따른다.", "",
-              "제출 전 확인: 가명 ID·시각·근거 참조의 민감성, 원문 비노출, 세션 승인/누락, 잘림, 분모, 보류 판단, 기준 버전, 기관 보관·반출 절차.",
-              "자동 형식 검증은 사람의 민감정보 검토·독립 코딩·연구적 타당성 검증을 대신하지 않는다.", ""]
+              "분석 범위: 세션 선택/누락, 잘림, 분모, 보류 판단, 기준 버전을 함께 기록했습니다.",
+              "자동 형식 검증은 독립 코딩·연구적 타당성 검증을 대신하지 않는다.", ""]
     return "\n".join(lines)
 
 

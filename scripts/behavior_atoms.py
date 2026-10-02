@@ -2,6 +2,7 @@
 import re
 import extract as e
 import grade_and_trace as g
+import observation_axes as x
 
 FACETS=['target','method','criterion','constraints','requested_output','trigger_condition','control_boundary','prior_result_reference']
 SUBTYPES={
@@ -34,23 +35,30 @@ def validate(path,participant_id,actions):
     users=[a for a in actions if a['actor']=='user']
     responses=[a for a in actions if a['actor'] in {'assistant','tool'}]
     if path is None:
-        return {'atom_schema_version':'1.1.0','participant_id':participant_id,
-            'entries':[{'event_id':a['event_id'],'observed_text_length':None,'atoms':None,'relations':None} for a in users],
+        return {'atom_schema_version':'1.2.0','participant_id':participant_id,
+            'entries':[{'event_id':a['event_id'],'observed_text_length':None,'atoms':None,'relations':None,
+                'observation_axes':x.unknown()} for a in users],
             'responses':[{'event_id':a['event_id'],'observed_text_length':None,'observations':None} for a in responses]}
     doc=e.read_json(path)
     g.keys(doc,['atom_schema_version','participant_id','entries','responses'],'atom_header_fields')
-    e.require(doc['atom_schema_version'] in {'1.0.0','1.1.0'} and doc['participant_id']==participant_id,'atom_header')
+    e.require(doc['atom_schema_version'] in {'1.0.0','1.1.0','1.2.0'} and doc['participant_id']==participant_id,'atom_header')
     by_id={a['event_id']:a for a in actions}
     for name,expected in [('entries',users),('responses',responses)]:
         rows=doc[name]
         e.require(isinstance(rows,list) and all(isinstance(row,dict) for row in rows),'atom_entries_objects')
         e.require({row.get('event_id') for row in rows}=={a['event_id'] for a in expected} and len(rows)==len(expected),'atom_exact_event_scope')
+    source_actions={a['source_ref']:a for a in actions}
+    source_lengths={by_id[row['event_id']]['source_ref']:row.get('observed_text_length')
+        for row in doc['entries']+doc['responses']}
     all_ids=set()
     for row in doc['entries']:
-        g.keys(row,['event_id','observed_text_length','atoms','relations'],'atom_entry_fields')
+        g.keys(row,['event_id','observed_text_length','atoms','relations']+
+            (['observation_axes'] if doc['atom_schema_version']=='1.2.0' else []),'atom_entry_fields')
         action=by_id[row['event_id']]
         length=row['observed_text_length']
         e.require(length is None or type(length) is int and length>=0,'atom_observed_length')
+        if doc['atom_schema_version']=='1.2.0':
+            x.validate(row,action,source_actions,source_lengths,spans)
         e.require(row['atoms'] is None or isinstance(row['atoms'],list),'atom_list_or_unknown')
         if row['atoms'] is None:
             e.require(row['relations'] is None,'unknown_atoms_cannot_have_relations')
@@ -67,7 +75,7 @@ def validate(path,participant_id,actions):
             e.require(isinstance(cat,str) and cat in SUBTYPES or cat is None,'atom_category')
             e.require(atom['subtype'] in (SUBTYPES[cat] if cat else ['other_explicit']),'atom_subtype')
             if atom['subtype'] in SEARCH_SUBTYPES:
-                e.require(doc['atom_schema_version']=='1.1.0' and 'search_details' in atom,'search_contract_required')
+                e.require(doc['atom_schema_version'] in {'1.1.0','1.2.0'} and 'search_details' in atom,'search_contract_required')
                 g.keys(atom['search_details'],SEARCH_FIELDS,'search_detail_fields')
                 for values in atom['search_details'].values():observations(values,action,length)
             else:e.require('search_details' not in atom,'search_details_only_for_search_actions')
@@ -120,6 +128,7 @@ def enrich(doc,processes,actions):
         for module in proc['modules']:
             row=by_event[module['user_event_id']]
             module['fine_action_ids']=None if row['atoms'] is None else [atom['atom_id'] for atom in row['atoms']]
+            module['observation_axes']=x.from_row(row)
             module['explicit_within_utterance_relations']=row['relations']
             module['response_observation_event_ids']=[eid for eid in module['following_event_ids'] if eid in response_by_event]
             module['response_link_basis']='observation_window_not_proven_request_fulfillment'
