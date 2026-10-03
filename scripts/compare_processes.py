@@ -113,6 +113,8 @@ def analyze(run_dirs, max_pairs=500, individual_only=False):
             "dataset_namespace": namespace, "data_mode": mode, "artifact_hashes": hashes,
             "taxonomy_sha256": coverage["taxonomy_sha256"], "skill_sha256": coverage["skill_sha256"],
             "model_observation": coverage["model_observation"], "complete_extraction": coverage["complete_extraction"]})
+        if "model_context" in coverage:
+            sources[-1]["model_context"] = coverage["model_context"]
         for s in coverage["sessions"]:
             if s["purpose"] == "task":
                 session_meta[(pid, task, namespace, s["session_id"])].append(s)

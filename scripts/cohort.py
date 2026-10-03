@@ -60,6 +60,8 @@ def load_run(folder, mode):
             e.require(s["approval"] and s["end_verified"] and s["total_events"] is not None and
                 not s["missing_ranges"] and not s["truncated_refs"] and s["read_rows"] == s["total_events"], "cohort_complete_session_inconsistent")
     actions = patterns["actions"]
+    e.mc.validate(coverage.get("model_context"), coverage["sessions"],
+                  {a["source_ref"]: a for a in actions}, e.require)
     e.require(len({a["event_id"] for a in actions}) == len(actions), "cohort_duplicate_source_event")
     e.require(len({a["source_ref"] for a in actions}) == len(actions), "cohort_duplicate_source_ref")
     known = {a["source_ref"] for a in actions}
@@ -259,6 +261,8 @@ def analyze(plan_path):
                 "skill_sha256": coverage["skill_sha256"], "taxonomy_sha256": coverage["taxonomy_sha256"],
                 "model_observation": coverage["model_observation"],
                 "complete_extraction": coverage["complete_extraction"]})
+            if "model_context" in coverage:
+                sources[-1]["model_context"] = coverage["model_context"]
             for a in patterns["actions"]:
                 event = a["event_id"]
                 e.require(event not in owners or owners[event] == unit["unit_id"], "cohort_event_assigned_multiple_units")

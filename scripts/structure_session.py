@@ -12,7 +12,7 @@ import grade_and_trace as g
 import behavior_atoms as b
 import observation_axes as x
 
-VERSION="0.5.2"
+VERSION="0.5.3"
 DETAIL_FIELDS=["goal","target","constraints","output_requirements","explicit_steps",
     "delegation_scope","control_boundary","verification_request","correction_issue",
     "reuse_resume","question_focus","evaluation_reference"]
@@ -119,6 +119,8 @@ def report(value):
     lines += ["", "출처·읽기 범위와 확인된 모델 설정:"]
     for source in value["source_runs"]:
         lines.append(f"- {source['run_id']}: 모드 {source['data_mode']}, 완전 추출 표시 {source['complete_extraction']}, 모델 관찰 {e.canonical(source['model_observation'])}.")
+    for coverage in value["coverage"]:
+        lines += e.mc.report_lines(coverage.get("model_context"))
     lines +=['','세부 행동 상태: '+value['atom_status']+'. 같은 발화 안의 순서는 명시 근거가 있는 관계만 보존합니다.',
         '| 사용자 사건 | 세부 행동 | 명시 순서/병렬 관계 수 |','|---|---|---:|']
     for row in value['behavior_atoms']['entries']:

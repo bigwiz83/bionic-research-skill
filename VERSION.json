@@ -1,5 +1,5 @@
 {
-  "package_version": "0.5.2",
+  "package_version": "0.5.3",
   "skill_scope": "single_participant_information_extraction_and_structure",
   "guided_start": true,
   "bionic_live_verified": false,
@@ -7,11 +7,22 @@
   "information_and_supporting_reference_search": true,
   "atom_schema_version": "1.2.0",
   "observation_axis_contract": "1.0.0",
-  "utterance_observation_axes": ["input_transformation", "query_mode", "role_assignment", "reasoning_target"],
+  "utterance_observation_axes": [
+    "input_transformation",
+    "query_mode",
+    "role_assignment",
+    "reasoning_target"
+  ],
   "consent_based_email_submission": true,
   "submission_version": "1.1.0",
   "participant_privacy_confirmation_required": false,
   "irb_gate_required": false,
-  "intake_data_modes": ["synthetic", "research"],
-  "research_recipient": "bigwiz83@gmail.com"
+  "intake_data_modes": [
+    "synthetic",
+    "research"
+  ],
+  "research_recipient": "bigwiz83@gmail.com",
+  "model_context_contract": "1.0.0",
+  "retrospective_model_metadata": true,
+  "realtime_settings_monitoring": false
 }

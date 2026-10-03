@@ -1,4 +1,4 @@
-# 참여자 사용 v0.5.2
+# 참여자 사용 v0.5.3
 
 1. 과제 종료 후 같은 프로젝트에서 추출용 새 세션을 만듭니다.
 2. @bionic-research-skill을 선택합니다.
@@ -22,3 +22,5 @@ python -B -m unittest discover -s tests -v
 예제의 작성된 코딩은 실제 기록의 자동 분류기가 아닙니다. Python은 모델이 읽어 작성한 관찰의 구조·범위·근거를 검증합니다.
 
 [세부 관찰](references/fine-observations.md) · [관찰 축](references/observation-axes.md) · [출력 계약](references/output-contract.md)
+
+종료 후 선택 세션의 최종 저장 헤더·응답별 메타데이터·추출 실행 모델을 구분합니다. 모델명·추론 수준·토큰 의미·확인된 파라미터와 읽은 시각/원기록 시각을 보존하며 최신 헤더로 과거 설정을 채우지 않습니다. [모델 환경 수집 안내](references/model-context.md).

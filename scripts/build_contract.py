@@ -50,6 +50,25 @@ def contract():
                                 "temperature": nullable({"type": "number", "minimum": 0}),
                                 "top_p": nullable({"type": "number", "minimum": 0, "maximum": 1}),
                                 "context_length": nullable(positive)})
+    definitions["model_snapshot"] = obj({
+        "snapshot_id": string(r"MS-[A-Z0-9-]{1,48}"),
+        "scope": enum(["task_session_header", "task_response", "extraction_runtime", "task_user_report"]),
+        "session_id": nullable(sid), "response_ref": nullable(source_ref),
+        "evidence_ref": string(r"META-[A-Z0-9-]{1,64}"),
+        "captured_at": timestamp, "source_timestamp": timestamp,
+        "model_id": nullable(string(r"[A-Za-z0-9_./:-]{1,128}")),
+        "reasoning_level": nullable(string(r"[^\r\n]{1,64}")),
+        "parameters": obj({
+            "temperature": nullable({"type": "number", "minimum": 0}),
+            "top_p": nullable({"type": "number", "minimum": 0, "maximum": 1}),
+            "top_k": nullable(integer), "max_output_tokens": nullable(integer),
+            "context_length": nullable(positive), "seed": nullable({"type": "integer"})}),
+        "token_counts": arr(obj({
+            "metric": enum(["input_tokens", "output_tokens", "total_tokens", "context_used_tokens", "displayed_unknown"]),
+            "aggregation": enum(["response", "session", "unknown"]), "value": integer}))})
+    definitions["model_context"] = obj({"context_version": {"const": "1.0.0"},
+        "collection_status": enum(["observed", "not_available", "not_collected"]),
+        "snapshots": arr(reference("model_snapshot"))})
     definitions["session"] = obj({"session_id": sid, "purpose": enum(["task", "analysis"]), "approved": boolean,
         "attempt_status": enum(["completed", "failed", "cancelled", "interrupted", "resumed", "unknown"]),
         "access": enum(["available", "missing_access", "unreadable", "missing_record"]),
@@ -58,7 +77,8 @@ def contract():
     definitions["manifest"] = obj({"schema_version": {"const": "1.0.0"}, "data_mode": enum(["synthetic", "research"]),
         "dataset_namespace": string(r"(?:SYN|DS)-[A-Z0-9-]{1,64}"), "participant_id": string(r"P-[A-Z0-9-]{1,48}"),
         "task_id": string(r"T-[A-Z0-9-]{1,48}"), "adapter": enum(["synthetic-export-v1", "bionic-introspection-normalized-unverified"]),
-        "model_observation": reference("model"), "sessions": arr(reference("session"), 1)})
+        "model_observation": reference("model"), "model_context": reference("model_context"),
+        "sessions": arr(reference("session"), 1)}, optional=["model_context"])
     definitions["event"] = obj({"source_index": positive, "source_id": nullable(string()),
         "source_sequence": nullable_integer, "timestamp": timestamp, "actor": enum(["user", "assistant", "tool", "system"]),
         "kind": enum(["user_message", "assistant_statement", "tool_request", "tool_success", "tool_failure", "tool_cancelled", "system_event", "compaction", "private"]),
@@ -100,10 +120,11 @@ def contract():
         "read_sessions": integer, "included_events": integer, "included_user_events": integer,
         "sessions": arr(reference("coverage_session"), 1), "source_hashes": arr(obj({"session_id": sid, "sha256": hash_value})),
         "manifest_sha256": hash_value, "codings_sha256": hash_value, "model_observation": reference("model"),
+        "model_context": reference("model_context"),
         "implementation_sha256": hash_value, "contract_sha256": hash_value, "skill_sha256": hash_value, "taxonomy_sha256": hash_value,
         "sensitive_review": {"const": "pending_human_review"}, "errors": arr(string()),
         "run_id": string(r"run-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{32}"), "created_at": {"type": "string", "format": "date-time"}},
-        optional=["run_id", "created_at", "sensitive_review"])
+        optional=["run_id", "created_at", "sensitive_review", "model_context"])
     return {"$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "urn:bionic-research-skill:1.0.0",
             "title": "Bionic normalized synthetic and research session intake and output contract", "$defs": definitions}
 

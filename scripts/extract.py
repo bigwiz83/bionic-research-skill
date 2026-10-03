@@ -10,6 +10,7 @@ import sys
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+import model_context as mc
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = "0.1.0"
@@ -227,6 +228,7 @@ def load_sources(manifest_path):
                 coverage["unknown_timestamps"] += 1
         full = session["end_verified"] and not coverage["truncated_refs"]
         coverage["status"] = "complete_public_scope" if full else "partial"
+    mc.validate(manifest.get("model_context"), manifest["sessions"], all_events, require)
     return manifest, all_events, coverage_sessions, hashes
 
 
@@ -335,6 +337,8 @@ def derive(manifest_path, codings_path):
                 "taxonomy_sha256": hashlib.sha256((ROOT / "references/taxonomy-v0.1.md").read_bytes()).hexdigest(),
                 "model_observation": manifest["model_observation"],
                 "errors": [s["session_id"] + ":" + s["error_code"] for s in sessions if s["error_code"]]}
+    if "model_context" in manifest:
+        coverage["model_context"] = manifest["model_context"]
     check_schema(patterns, "patterns")
     check_schema(coverage, "coverage")
     return patterns, coverage
@@ -369,6 +373,7 @@ def report(patterns, coverage):
               "원문·원본 ID는 출력에 복사하지 않았다. 모델 설정은 coverage.json의 확인 범위를 따른다.", "",
               "분석 범위: 세션 선택/누락, 잘림, 분모, 보류 판단, 기준 버전을 함께 기록했습니다.",
               "자동 형식 검증은 독립 코딩·연구적 타당성 검증을 대신하지 않는다.", ""]
+    lines += mc.report_lines(coverage.get("model_context"))
     return "\n".join(lines)
 
 
